@@ -8,8 +8,6 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.admin == true || 
-        request.auth.uid == "5TZK6YHmOOTe5padFPqCbXuavPu1" ||
-        request.auth.uid == "s5R5cpdbkLMoflRVULomwttrTd33" ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }
@@ -22,12 +20,12 @@ service cloud.firestore {
 
     // Regras de Campanhas - Crítico para a tela de seleção
     match /campaigns/{campaignId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /qrRedirects/{redirectId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
@@ -41,16 +39,16 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
     match /system/gameEvents {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     match /system/limboState {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow update: if isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readThreadIds']);
       allow write: if isAdmin();
     }
     match /system/{document=**} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     match /users/{userId} {
