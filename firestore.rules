@@ -6,7 +6,12 @@ service cloud.firestore {
       return request.auth != null;
     }
     function isAdmin() {
-      return isAuthenticated() && (request.auth.token.admin == true || request.auth.uid == "5TZK6YHmOOTe5padFPqCbXuavPu1");
+      return isAuthenticated() && (
+        request.auth.token.admin == true || 
+        request.auth.uid == "5TZK6YHmOOTe5padFPqCbXuavPu1" ||
+        request.auth.uid == "s5R5cpdbkLMoflRVULomwttrTd33" ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
@@ -50,7 +55,7 @@ service cloud.firestore {
     }
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() || (isOwner(userId) && request.resource.data.role != 'admin');
       allow update: if isAdmin() || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'spotifyPlaylistUrl', 'forceTerminalOpen', 'forceMacOpen', 'campaignId', 'masterName', 'displayName', 'codinome', 'agentStatus', 'dangerLevel', 'profilePhotoUrl', 'agentId', 'intelMigrated', 'intelMigratedAt']));
       allow delete: if isAdmin();
 
