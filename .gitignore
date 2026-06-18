@@ -1,0 +1,8 @@
+# Build output
+dist/
+
+# Firebase cache
+.firebase/
+
+# Functions dependencies
+functions/node_modules/
