@@ -28,6 +28,11 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
+
+    match /activeSessions/{uid} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isOwner(uid);
+    }
     
     match /{path=**}/characters/{characterId} {
       allow read: if isAdmin();
@@ -54,7 +59,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAdmin() || (isOwner(userId) && request.resource.data.role != 'admin');
-      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'spotifyPlaylistUrl', 'forceTerminalOpen', 'forceMacOpen', 'campaignId', 'masterName', 'displayName', 'codinome', 'agentStatus', 'dangerLevel', 'profilePhotoUrl', 'agentId', 'intelMigrated', 'intelMigratedAt']));
+      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'masterName', 'displayName']));
       allow delete: if isAdmin();
 
       // --- Multi-Character Model (current) ---
@@ -64,10 +69,6 @@ service cloud.firestore {
         allow update: if isOwner(userId) || isAdmin();
         allow delete: if isAdmin();
 
-        match /tapes/{tapeId} {
-          allow read: if isOwner(userId) || isAdmin();
-          allow write: if isOwner(userId) || isAdmin();
-        }
         match /intel/{intelId} {
           allow read: if isOwner(userId) || isAdmin();
           allow write: if isOwner(userId) || isAdmin();
@@ -81,42 +82,7 @@ service cloud.firestore {
           allow create, update: if (isOwner(userId) && isValidPayloadSize()) || isAdmin();
           allow delete: if isOwner(userId) || isAdmin();
         }
-        match /gallery/{imageId} {
-          allow read: if isOwner(userId) || isAdmin();
-          allow write: if isOwner(userId) || isAdmin();
-        }
       }
-
-      // --- Legacy direct subcollections (backward compat) ---
-      match /tapes/{tapeId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isOwner(userId) || isAdmin();
-      }
-      match /achievements/{achId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isOwner(userId) || isAdmin();
-      }
-      match /stats/{statDoc} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create, update: if (isOwner(userId) && isValidPayloadSize()) || isAdmin();
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-      match /gallery/{imageId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isOwner(userId) || isAdmin();
-      }
-    }
-    match /audios/{audioId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    match /intel_items/{itemId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    match /gallery/{imageId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
     }
     match /groups/{groupId} {
       allow read: if isAuthenticated();
