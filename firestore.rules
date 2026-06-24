@@ -17,6 +17,12 @@ service cloud.firestore {
     function isValidPayloadSize() {
       return request.resource.data.keys().size() < 50; 
     }
+    function ownerCannotEscalatePrivileges() {
+      return request.resource.data.role == resource.data.role
+        && request.resource.data.get('suspended', false) == resource.data.get('suspended', false)
+        && request.resource.data.get('hasTerminalAccess', false) == resource.data.get('hasTerminalAccess', false)
+        && request.resource.data.get('hasMacAccess', false) == resource.data.get('hasMacAccess', false);
+    }
 
     // Regras de Campanhas - Crítico para a tela de seleção
     match /campaigns/{campaignId} {
@@ -58,8 +64,12 @@ service cloud.firestore {
     }
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAdmin() || (isOwner(userId) && request.resource.data.role != 'admin');
-      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'masterName', 'displayName']));
+      allow create: if false;
+      allow update: if isAdmin() || (
+        isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'masterName', 'displayName'])
+        && ownerCannotEscalatePrivileges()
+      );
       allow delete: if isAdmin();
 
       // --- Multi-Character Model (current) ---

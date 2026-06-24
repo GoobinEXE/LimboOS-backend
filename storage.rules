@@ -1,19 +1,17 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Function to check if the user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Function to check if the user is the admin
     function isAdmin() {
-      return isAuthenticated() && request.auth.uid == "5TZK6YHmOOTe5padFPqCbXuavPu1";
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     match /profilePhotos/{userId}/{allPaths=**} {
