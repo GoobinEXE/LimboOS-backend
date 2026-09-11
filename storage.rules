@@ -7,26 +7,59 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.admin == true ||
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        userDoc().role == 'admin'
       );
     }
 
+    function isActiveUser() {
+      return isAuthenticated() && (
+        isAdmin() ||
+        userDoc().get('suspended', false) != true
+      );
+    }
+
+    function isImageUpload() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)')
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    function isAllowedMediaUpload() {
+      return request.resource.size < 100 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('audio/.*')
+          || request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)')
+          || request.resource.contentType.matches('video/.*')
+          || request.resource.contentType == 'application/pdf'
+        );
+    }
+
     match /profilePhotos/{userId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin() || (isActiveUser() && request.auth.uid == userId);
+      allow write: if isActiveUser()
+        && request.auth.uid == userId
+        && isImageUpload();
+    }
+
+    match /media/{allPaths=**} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isAllowedMediaUpload();
     }
 
     match /audios/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isAllowedMediaUpload();
     }
 
     match /mediaAssets/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isAllowedMediaUpload();
     }
 
     match /{allPaths=**} {

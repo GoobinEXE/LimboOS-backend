@@ -1,21 +1,31 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAuthenticated() {
       return request.auth != null;
     }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.admin == true || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        request.auth.token.admin == true ||
+        userDoc().role == 'admin'
       );
     }
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
+    function isSuspended() {
+      return isAuthenticated()
+        && userDoc().get('suspended', false) == true
+        && userDoc().get('role', 'player') != 'admin';
+    }
+    function isActiveUser() {
+      return isAuthenticated() && !isSuspended();
+    }
     function isValidPayloadSize() {
-      return request.resource.data.keys().size() < 50; 
+      return request.resource.data.keys().size() < 50;
     }
     function ownerCannotEscalatePrivileges() {
       return request.resource.data.role == resource.data.role
@@ -23,23 +33,89 @@ service cloud.firestore {
         && request.resource.data.get('hasTerminalAccess', false) == resource.data.get('hasTerminalAccess', false)
         && request.resource.data.get('hasMacAccess', false) == resource.data.get('hasMacAccess', false);
     }
+    function ownerForceFlagsOnlyClear() {
+      return request.resource.data.get('forceTerminalOpen', false) == false
+        && request.resource.data.get('forceMacOpen', false) == false;
+    }
+    function characterOwnerSafeKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'codinome',
+        'profilePhotoUrl',
+        'spotifyPlaylistUrl',
+        'phoneNumber',
+        'readThreadIds',
+        'forceTerminalOpen',
+        'forceMacOpen',
+        'agentId',
+        'pendingVideoPlay'
+      ]);
+    }
+    function characterOwnerSafeUpdate() {
+      return characterOwnerSafeKeys()
+        && request.resource.data.get('forceTerminalOpen', false) == false
+        && request.resource.data.get('forceMacOpen', false) == false
+        && (
+          !('pendingVideoPlay' in request.resource.data.diff(resource.data).affectedKeys())
+          || request.resource.data.pendingVideoPlay == null
+        )
+        && (
+          !('codinome' in request.resource.data.diff(resource.data).affectedKeys())
+          || (
+            request.resource.data.codinome is string
+            && request.resource.data.codinome.size() > 0
+            && request.resource.data.codinome.size() < 64
+          )
+        )
+        && (
+          !('phoneNumber' in request.resource.data.diff(resource.data).affectedKeys())
+          || (
+            request.resource.data.phoneNumber is string
+            && request.resource.data.phoneNumber.size() < 32
+          )
+        )
+        && (
+          !('spotifyPlaylistUrl' in request.resource.data.diff(resource.data).affectedKeys())
+          || (
+            request.resource.data.spotifyPlaylistUrl is string
+            && request.resource.data.spotifyPlaylistUrl.size() < 512
+          )
+        );
+    }
+    function characterOwnerSafeCreate() {
+      return request.resource.data.keys().hasOnly([
+          'codinome', 'agentStatus', 'dangerLevel', 'archived', 'createdAt'
+        ])
+        && request.resource.data.codinome is string
+        && request.resource.data.codinome.size() > 0
+        && request.resource.data.codinome.size() < 64
+        && request.resource.data.agentStatus == 'vivo'
+        && request.resource.data.dangerLevel == 1
+        && request.resource.data.archived == false;
+    }
+    function isGroupMember(groupId) {
+      return isActiveUser()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.get('memberUids', []);
+    }
+    function messageSenderIsOwnCharacter(groupId) {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)/characters/$(request.resource.data.senderId))
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.get('memberUids', []);
+    }
 
-    // Regras de Campanhas - Crítico para a tela de seleção
     match /campaigns/{campaignId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser() || isAdmin();
       allow write: if isAdmin();
     }
 
     match /qrRedirects/{redirectId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /activeSessions/{uid} {
       allow read: if isAdmin();
-      allow create, update, delete: if isOwner(uid);
+      allow create, update, delete: if isOwner(uid) && isActiveUser();
     }
-    
+
     match /{path=**}/characters/{characterId} {
       allow read: if isAdmin();
     }
@@ -49,78 +125,105 @@ service cloud.firestore {
     match /{path=**}/stats/{statDoc} {
       allow read: if isAdmin();
     }
+
     match /system/gameEvents {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser() || isAdmin();
       allow write: if isAdmin();
     }
     match /system/limboState {
-      allow read: if isAuthenticated();
-      allow update: if isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readThreadIds']);
+      allow read: if isActiveUser() || isAdmin();
       allow write: if isAdmin();
     }
     match /system/{document=**} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if false;
       allow update: if isAdmin() || (
         isOwner(userId)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'masterName', 'displayName'])
+        && !isSuspended()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastLogin', 'masterName', 'displayName', 'forceTerminalOpen', 'forceMacOpen'
+        ])
         && ownerCannotEscalatePrivileges()
+        && ownerForceFlagsOnlyClear()
       );
       allow delete: if isAdmin();
 
-      // --- Multi-Character Model (current) ---
       match /characters/{characterId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) || isAdmin();
-        allow update: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin() || (isOwner(userId) && isActiveUser() && characterOwnerSafeCreate());
+        allow update: if isAdmin() || (isOwner(userId) && isActiveUser() && characterOwnerSafeUpdate());
         allow delete: if isAdmin();
 
         match /intel/{intelId} {
           allow read: if isOwner(userId) || isAdmin();
-          allow write: if isOwner(userId) || isAdmin();
+          allow write: if isAdmin();
         }
         match /achievements/{achId} {
           allow read: if isOwner(userId) || isAdmin();
-          allow write: if isOwner(userId) || isAdmin();
+          allow write: if isAdmin();
         }
         match /stats/{statDoc} {
           allow read: if isOwner(userId) || isAdmin();
-          allow create, update: if (isOwner(userId) && isValidPayloadSize()) || isAdmin();
+          allow create, update: if (isOwner(userId) && isActiveUser() && isValidPayloadSize()) || isAdmin();
           allow delete: if isOwner(userId) || isAdmin();
         }
       }
     }
+
     match /groups/{groupId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin()
+        || (isActiveUser() && request.auth.uid in resource.data.get('memberUids', []));
       allow write: if isAdmin();
 
       match /messages/{messageId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
+        allow read: if isAdmin() || isGroupMember(groupId);
+        allow create: if isAdmin() || (
+          isGroupMember(groupId)
+          && request.resource.data.keys().hasAll(['senderId', 'text', 'createdAt'])
+          && request.resource.data.senderId is string
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() < 4000
+          && messageSenderIsOwnCharacter(groupId)
+        );
         allow update, delete: if isAdmin();
       }
     }
+
     match /jukeboxTracks/{trackId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
     }
     match /mediaAssets/{assetId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    match /mediaFolders/{folderId} {
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
     match /playEvents/{eventId} {
       allow read: if isAdmin();
-      allow create: if isOwner(request.resource.data.uid) && isValidPayloadSize();
-      allow update: if isOwner(resource.data.uid) || isAdmin();
+      allow create: if isOwner(request.resource.data.uid) && isActiveUser() && isValidPayloadSize();
+      allow update: if isAdmin() || (
+        isOwner(resource.data.uid)
+        && isActiveUser()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed'])
+      );
       allow delete: if isAdmin();
     }
     match /activityLog/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAdmin() || (
+        isActiveUser()
+        && request.resource.data.uid == request.auth.uid
+        && isValidPayloadSize()
+      );
       allow update, delete: if isAdmin();
     }
     match /{document=**} {

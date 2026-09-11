@@ -286,3 +286,370 @@ exports.aggregateUserCreation = onDocumentCreated(
     }
   },
 );
+
+async function assertActiveAuth(request) {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+  const db = getFirestore();
+  const userDoc = await db.doc(`users/${request.auth.uid}`).get();
+  if (userDoc.exists) {
+    const data = userDoc.data() || {};
+    if (data.suspended === true && data.role !== 'admin' && request.auth.token.admin !== true) {
+      throw new HttpsError('permission-denied', 'Conta suspensa.');
+    }
+  }
+  return userDoc;
+}
+
+async function assertOwnsCharacter(uid, characterId) {
+  const db = getFirestore();
+  const charRef = db.doc(`users/${uid}/characters/${characterId}`);
+  const charSnap = await charRef.get();
+  if (!charSnap.exists) {
+    throw new HttpsError('not-found', 'Personagem não encontrado.');
+  }
+  return charSnap;
+}
+
+async function isRequestAdmin(request) {
+  if (request.auth?.token?.admin === true) return true;
+  const db = getFirestore();
+  const userDoc = await db.doc(`users/${request.auth.uid}`).get();
+  return userDoc.exists && userDoc.data()?.role === 'admin';
+}
+
+/**
+ * unlockIntel — desbloqueia intel para o próprio personagem (ou qualquer, se admin).
+ * Não-admin + mediaAsset remoto: exige QR (sourceCode / qrRedirects) ou unlock prévio.
+ */
+exports.unlockIntel = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { characterId, intelId, campaignId, targetUid, sourceCode } = request.data || {};
+  if (!characterId || typeof characterId !== 'string') {
+    throw new HttpsError('invalid-argument', 'characterId é obrigatório.');
+  }
+  if (!intelId || typeof intelId !== 'string' || intelId.length > 128) {
+    throw new HttpsError('invalid-argument', 'intelId inválido.');
+  }
+
+  const admin = await isRequestAdmin(request);
+  const uid = admin && typeof targetUid === 'string' && targetUid
+    ? targetUid
+    : request.auth.uid;
+
+  if (!admin && uid !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'Sem permissão para este personagem.');
+  }
+
+  await assertOwnsCharacter(uid, characterId);
+
+  const db = getFirestore();
+  const intelRef = db.doc(`users/${uid}/characters/${characterId}/intel/${intelId}`);
+  const existingUnlock = await intelRef.get();
+
+  if (!admin && !existingUnlock.exists) {
+    const assetSnap = await db.doc(`mediaAssets/${intelId}`).get();
+    if (assetSnap.exists) {
+      const codesToTry = [];
+      if (typeof sourceCode === 'string' && sourceCode) codesToTry.push(sourceCode);
+      codesToTry.push(intelId);
+
+      let qrAuthorized = false;
+      for (const code of codesToTry) {
+        const redirectSnap = await db.doc(`qrRedirects/${code}`).get();
+        if (!redirectSnap.exists) continue;
+        const targetId = redirectSnap.data()?.targetId || code;
+        if (targetId === intelId) {
+          qrAuthorized = true;
+          break;
+        }
+      }
+
+      if (!qrAuthorized) {
+        throw new HttpsError(
+          'permission-denied',
+          'Desbloqueio de mídia remota requer código QR válido.',
+        );
+      }
+    }
+    // Sem mediaAsset: intel local/hardcoded — permitido (já no client bundle)
+  }
+
+  await intelRef.set(
+    {
+      intelId,
+      unlockedAt: FieldValue.serverTimestamp(),
+      campaignId: campaignId || null,
+      type: 'AUDIO',
+    },
+    { merge: true },
+  );
+
+  return { success: true, intelId };
+});
+
+/**
+ * grantAchievements — concede conquistas ao próprio personagem (ou qualquer, se admin).
+ */
+exports.grantAchievements = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { characterId, achievementIds, targetUid, campaignId, platform } = request.data || {};
+  if (!characterId || typeof characterId !== 'string') {
+    throw new HttpsError('invalid-argument', 'characterId é obrigatório.');
+  }
+  if (!Array.isArray(achievementIds) || achievementIds.length === 0 || achievementIds.length > 50) {
+    throw new HttpsError('invalid-argument', 'achievementIds inválido.');
+  }
+
+  const admin = await isRequestAdmin(request);
+  const uid = admin && typeof targetUid === 'string' && targetUid
+    ? targetUid
+    : request.auth.uid;
+
+  if (!admin && uid !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'Sem permissão para este personagem.');
+  }
+
+  await assertOwnsCharacter(uid, characterId);
+
+  const resolvedCampaign =
+    typeof campaignId === 'string' && campaignId.length > 0 && campaignId.length <= 128
+      ? campaignId
+      : 'unscoped';
+  const resolvedPlatform =
+    platform === 'nokia' || platform === 'walkman' || platform === 'global'
+      ? platform
+      : 'walkman';
+
+  const db = getFirestore();
+  const batch = db.batch();
+  for (const id of achievementIds) {
+    if (typeof id !== 'string' || !id || id.length > 128) {
+      throw new HttpsError('invalid-argument', 'achievementId inválido.');
+    }
+    // Aceita id base ou doc composto já montado
+    const isComposite = id.includes('__');
+    const docId = isComposite ? id : `${id}__${resolvedCampaign}`;
+    const baseId = isComposite ? id.slice(0, id.lastIndexOf('__')) : id;
+    const campFromDoc = isComposite ? id.slice(id.lastIndexOf('__') + 2) : resolvedCampaign;
+    const ref = db.doc(`users/${uid}/characters/${characterId}/achievements/${docId}`);
+    batch.set(ref, {
+      achievementId: baseId,
+      campaignId: campFromDoc,
+      platform: resolvedPlatform,
+      unlockedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+  await batch.commit();
+
+  return { success: true, count: achievementIds.length };
+});
+
+/**
+ * resolveIntelCode — resolve QR/código para um asset (sem listar o catálogo).
+ * Não-admin: só resolve se existir qrRedirects/{code} (bloqueia enumeração por assetId).
+ */
+exports.resolveIntelCode = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { code } = request.data || {};
+  if (!code || typeof code !== 'string' || code.length > 128) {
+    throw new HttpsError('invalid-argument', 'code inválido.');
+  }
+
+  const db = getFirestore();
+  const admin = await isRequestAdmin(request);
+  const redirectSnap = await db.doc(`qrRedirects/${code}`).get();
+
+  if (!admin && !redirectSnap.exists) {
+    // Bloqueia resolve direto por ID de mediaAsset (enumeração do acervo)
+    return { success: true, redirectedId: null, asset: null };
+  }
+
+  const finalCode = redirectSnap.exists
+    ? (redirectSnap.data()?.targetId || code)
+    : code;
+
+  if (!finalCode || typeof finalCode !== 'string') {
+    return { success: true, redirectedId: null, asset: null };
+  }
+
+  const assetSnap = await db.doc(`mediaAssets/${finalCode}`).get();
+  if (!assetSnap.exists) {
+    return { success: true, redirectedId: redirectSnap.exists ? finalCode : null, asset: null };
+  }
+
+  const data = assetSnap.data() || {};
+  // Metadados mínimos + URL só após caminho QR (ou admin) — necessário para playback imediato pós-scan
+  return {
+    success: true,
+    redirectedId: redirectSnap.exists ? finalCode : null,
+    asset: {
+      id: assetSnap.id,
+      ...data,
+      _viaQr: redirectSnap.exists,
+    },
+  };
+});
+
+/**
+ * getMediaAssetsByIds — retorna mediaAssets apenas se desbloqueados para o personagem (ou admin).
+ */
+exports.getMediaAssetsByIds = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { characterId, assetIds, targetUid } = request.data || {};
+  if (!Array.isArray(assetIds) || assetIds.length === 0 || assetIds.length > 50) {
+    throw new HttpsError('invalid-argument', 'assetIds inválido.');
+  }
+
+  const admin = await isRequestAdmin(request);
+  const uid = admin && typeof targetUid === 'string' && targetUid
+    ? targetUid
+    : request.auth.uid;
+
+  if (!admin) {
+    if (!characterId || typeof characterId !== 'string') {
+      throw new HttpsError('invalid-argument', 'characterId é obrigatório.');
+    }
+    if (uid !== request.auth.uid) {
+      throw new HttpsError('permission-denied', 'Sem permissão.');
+    }
+    await assertOwnsCharacter(uid, characterId);
+  }
+
+  const db = getFirestore();
+  const assets = [];
+
+  for (const assetId of assetIds) {
+    if (typeof assetId !== 'string' || !assetId || assetId.length > 128) continue;
+
+    if (!admin) {
+      const unlockSnap = await db
+        .doc(`users/${uid}/characters/${characterId}/intel/${assetId}`)
+        .get();
+      if (!unlockSnap.exists) continue;
+    }
+
+    const assetSnap = await db.doc(`mediaAssets/${assetId}`).get();
+    if (assetSnap.exists) {
+      assets.push({ id: assetSnap.id, ...assetSnap.data() });
+    }
+  }
+
+  return { success: true, assets };
+});
+
+/**
+ * fetchQrRedirect — lookup pontual de redirect (admin ou jogador autenticado).
+ */
+exports.fetchQrRedirect = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { sourceId } = request.data || {};
+  if (!sourceId || typeof sourceId !== 'string' || sourceId.length > 128) {
+    throw new HttpsError('invalid-argument', 'sourceId inválido.');
+  }
+
+  const snap = await getFirestore().doc(`qrRedirects/${sourceId}`).get();
+  return {
+    success: true,
+    targetId: snap.exists ? (snap.data()?.targetId || null) : null,
+  };
+});
+
+/**
+ * setCharacterCampaign — define campaignId após validar unlock do personagem ou do grupo.
+ */
+exports.setCharacterCampaign = onCall({ region: REGION }, async (request) => {
+  await assertActiveAuth(request);
+
+  const { characterId, campaignId, targetUid } = request.data || {};
+  if (!characterId || typeof characterId !== 'string') {
+    throw new HttpsError('invalid-argument', 'characterId é obrigatório.');
+  }
+  if (!campaignId || typeof campaignId !== 'string' || campaignId.length > 128) {
+    throw new HttpsError('invalid-argument', 'campaignId inválido.');
+  }
+
+  const admin = await isRequestAdmin(request);
+  const uid = admin && typeof targetUid === 'string' && targetUid
+    ? targetUid
+    : request.auth.uid;
+
+  if (!admin && uid !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'Sem permissão.');
+  }
+
+  const charSnap = await assertOwnsCharacter(uid, characterId);
+  const charData = charSnap.data() || {};
+
+  if (!admin) {
+    const unlocked = new Set([
+      ...(Array.isArray(charData.unlockedCampaigns) ? charData.unlockedCampaigns : []),
+      ...(charData.campaignId ? [charData.campaignId] : []),
+    ]);
+
+    const db = getFirestore();
+    const groupsSnap = await db
+      .collection('groups')
+      .where('memberUids', 'array-contains', uid)
+      .get();
+
+    groupsSnap.forEach((groupDoc) => {
+      const g = groupDoc.data() || {};
+      const slots = Array.isArray(g.characterSlots) ? g.characterSlots : [];
+      const inGroup = slots.some(
+        (s) => s && (s.characterId === characterId || s.uid === uid),
+      );
+      if (!inGroup) return;
+      if (g.campaignId) unlocked.add(g.campaignId);
+      if (Array.isArray(g.unlockedCampaigns)) {
+        g.unlockedCampaigns.forEach((id) => {
+          if (typeof id === 'string') unlocked.add(id);
+        });
+      }
+    });
+
+    if (!unlocked.has(campaignId)) {
+      throw new HttpsError('permission-denied', 'Campanha não desbloqueada para este agente.');
+    }
+  }
+
+  await getFirestore()
+    .doc(`users/${uid}/characters/${characterId}`)
+    .set({ campaignId }, { merge: true });
+
+  return { success: true, campaignId };
+});
+
+/**
+ * backfillGroupMemberUids — denormaliza memberUids em grupos legados (admin).
+ */
+exports.backfillGroupMemberUids = onCall({ region: REGION }, async (request) => {
+  await assertAdminAuth(request);
+  const db = getFirestore();
+  const snap = await db.collection('groups').get();
+  let updated = 0;
+
+  for (const groupDoc of snap.docs) {
+    const data = groupDoc.data() || {};
+    const slots = Array.isArray(data.characterSlots) ? data.characterSlots : [];
+    const memberUids = Array.from(
+      new Set(slots.map((s) => s && s.uid).filter((uid) => typeof uid === 'string' && uid)),
+    );
+    const existing = Array.isArray(data.memberUids) ? data.memberUids : [];
+    const same =
+      existing.length === memberUids.length
+      && memberUids.every((uid) => existing.includes(uid));
+    if (!same) {
+      await groupDoc.ref.set({ memberUids }, { merge: true });
+      updated += 1;
+    }
+  }
+
+  return { success: true, updated, total: snap.size };
+});
