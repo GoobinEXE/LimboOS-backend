@@ -6,3 +6,10 @@ dist/
 
 # Functions dependencies
 functions/node_modules/
+
+# Sistema / logs
+.DS_Store
+**/.DS_Store
+*.log
+firepit-log.txt
+
