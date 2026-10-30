@@ -352,18 +352,27 @@ exports.unlockIntel = onCall({ region: REGION }, async (request) => {
   if (!admin && !existingUnlock.exists) {
     const assetSnap = await db.doc(`mediaAssets/${intelId}`).get();
     if (assetSnap.exists) {
-      const codesToTry = [];
-      if (typeof sourceCode === 'string' && sourceCode) codesToTry.push(sourceCode);
-      codesToTry.push(intelId);
-
+      // Autoriza: QR do catálogo (sourceCode === intelId) ou qrRedirects → intelId
       let qrAuthorized = false;
-      for (const code of codesToTry) {
-        const redirectSnap = await db.doc(`qrRedirects/${code}`).get();
-        if (!redirectSnap.exists) continue;
-        const targetId = redirectSnap.data()?.targetId || code;
-        if (targetId === intelId) {
-          qrAuthorized = true;
-          break;
+      const scanned =
+        typeof sourceCode === 'string' && sourceCode.trim() ? sourceCode.trim() : '';
+
+      if (scanned && scanned === intelId) {
+        qrAuthorized = true;
+      }
+
+      if (!qrAuthorized) {
+        const codesToTry = [];
+        if (scanned) codesToTry.push(scanned);
+        codesToTry.push(intelId);
+        for (const code of codesToTry) {
+          const redirectSnap = await db.doc(`qrRedirects/${code}`).get();
+          if (!redirectSnap.exists) continue;
+          const targetId = redirectSnap.data()?.targetId || code;
+          if (targetId === intelId) {
+            qrAuthorized = true;
+            break;
+          }
         }
       }
 
@@ -450,26 +459,26 @@ exports.grantAchievements = onCall({ region: REGION }, async (request) => {
 
 /**
  * resolveIntelCode — resolve QR/código para um asset (sem listar o catálogo).
- * Não-admin: só resolve se existir qrRedirects/{code} (bloqueia enumeração por assetId).
+ * Aceita: qrRedirects/{code} → targetId, ou ID direto de mediaAssets/{code}
+ * (QR gerado no catálogo admin usa o ID do asset).
  */
 exports.resolveIntelCode = onCall({ region: REGION }, async (request) => {
   await assertActiveAuth(request);
 
-  const { code } = request.data || {};
-  if (!code || typeof code !== 'string' || code.length > 128) {
+  const { code: rawCode } = request.data || {};
+  if (!rawCode || typeof rawCode !== 'string' || rawCode.length > 128) {
+    throw new HttpsError('invalid-argument', 'code inválido.');
+  }
+
+  const code = rawCode.trim();
+  if (!code || code.length > 128) {
     throw new HttpsError('invalid-argument', 'code inválido.');
   }
 
   const db = getFirestore();
-  const admin = await isRequestAdmin(request);
   const redirectSnap = await db.doc(`qrRedirects/${code}`).get();
-
-  if (!admin && !redirectSnap.exists) {
-    // Bloqueia resolve direto por ID de mediaAsset (enumeração do acervo)
-    return { success: true, redirectedId: null, asset: null };
-  }
-
-  const finalCode = redirectSnap.exists
+  const viaRedirect = redirectSnap.exists;
+  const finalCode = viaRedirect
     ? (redirectSnap.data()?.targetId || code)
     : code;
 
@@ -479,18 +488,22 @@ exports.resolveIntelCode = onCall({ region: REGION }, async (request) => {
 
   const assetSnap = await db.doc(`mediaAssets/${finalCode}`).get();
   if (!assetSnap.exists) {
-    return { success: true, redirectedId: redirectSnap.exists ? finalCode : null, asset: null };
+    return {
+      success: true,
+      redirectedId: viaRedirect ? finalCode : null,
+      asset: null,
+    };
   }
 
   const data = assetSnap.data() || {};
-  // Metadados mínimos + URL só após caminho QR (ou admin) — necessário para playback imediato pós-scan
+  // Metadados + URL após QR autenticado — necessário para playback imediato pós-scan
   return {
     success: true,
-    redirectedId: redirectSnap.exists ? finalCode : null,
+    redirectedId: viaRedirect ? finalCode : (finalCode !== code ? finalCode : null),
     asset: {
       id: assetSnap.id,
       ...data,
-      _viaQr: redirectSnap.exists,
+      _viaQr: true,
     },
   };
 });

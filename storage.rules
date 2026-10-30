@@ -62,6 +62,16 @@ service firebase.storage {
       allow write: if isAdmin() && isAllowedMediaUpload();
     }
 
+    match /achievementIcons/{allPaths=**} {
+      allow read: if isActiveUser() || isAdmin();
+      allow write: if isAdmin() && isImageUpload();
+    }
+
+    match /npcAvatars/{allPaths=**} {
+      allow read: if isActiveUser() || isAdmin();
+      allow write: if isAdmin() && isImageUpload();
+    }
+
     match /{allPaths=**} {
       allow read: if isAdmin();
       allow write: if isAdmin();
