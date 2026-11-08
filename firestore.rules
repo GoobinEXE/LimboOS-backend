@@ -319,6 +319,7 @@ service cloud.firestore {
           allow read: if gmOfGroup() || memberOfGroup();
           allow create: if gmOfGroup() || (
             memberOfGroup()
+            && !request.resource.data.keys().hasAny(['notifyUid'])
             && request.resource.data.keys().hasAll(['senderId', 'text', 'createdAt'])
             && request.resource.data.senderId is string
             && request.resource.data.text is string
@@ -430,9 +431,32 @@ service cloud.firestore {
       allow update: if isSelf(userId)
         && !isSuspended()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'lastLogin', 'masterName', 'displayName'
-        ]);
+          'lastLogin', 'masterName', 'displayName', 'notificationPrefs'
+        ])
+        && notificationPrefsOk();
       allow delete: if false;
+
+      function notificationPrefsOk() {
+        let prefs = request.resource.data.get('notificationPrefs', {});
+        return prefs is map
+          && prefs.keys().hasOnly(['intel', 'sms', 'achievements', 'gm', 'reminders']);
+      }
+
+      // Aparelhos para push. badge só volta a zero pelo cliente; quem soma é a Function.
+      match /devices/{deviceId} {
+        allow read, delete: if isSelf(userId);
+        allow create, update: if isSelf(userId) && isActive()
+          && request.resource.data.keys().hasOnly([
+            'token', 'platform', 'appVersion', 'locale', 'activeCharacterId',
+            'enabled', 'badge', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.token is string
+          && request.resource.data.token.size() > 0
+          && request.resource.data.token.size() < 4096
+          && request.resource.data.platform in ['ios', 'android']
+          && request.resource.data.enabled is bool
+          && request.resource.data.get('badge', 0) == 0;
+      }
 
       // Índice "pastas compartilhadas comigo", escrito por Cloud Functions.
       match /memberships/{wsId} {

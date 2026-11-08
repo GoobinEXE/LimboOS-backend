@@ -1,10 +1,12 @@
 const crypto = require('node:crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const functionsV1 = require('firebase-functions/v1');
+const { sendToUser, logPush } = require('./push');
 
 initializeApp();
 
@@ -1062,6 +1064,7 @@ exports.unlockIntel = onCall({ region: REGION }, async (request) => {
       campaignId: ctx.charData.campaignId || null,
       workspaceId: wsId,
       type: 'TEXT',
+      source: ctx.gmAccess ? 'admin' : 'player',
     }, { merge: true });
     return { success: true, intelId };
   }
@@ -1098,6 +1101,7 @@ exports.unlockIntel = onCall({ region: REGION }, async (request) => {
     campaignId: resolvedCampaign,
     workspaceId: wsId,
     type: 'AUDIO',
+    source: ctx.gmAccess ? 'admin' : 'player',
   }, { merge: true });
 
   return { success: true, intelId };
@@ -1141,6 +1145,7 @@ exports.grantAchievements = onCall({ region: REGION }, async (request) => {
       workspaceId: wsId,
       platform: resolvedPlatform,
       unlockedAt: FieldValue.serverTimestamp(),
+      source: ctx.gmAccess ? 'admin' : 'player',
     }, { merge: true });
   }
   await batch.commit();
@@ -1268,3 +1273,400 @@ exports.setCharacterCampaign = onCall({ region: REGION }, async (request) => {
   await db.doc(`users/${ctx.uid}/characters/${characterId}`).set({ campaignId }, { merge: true });
   return { success: true, campaignId };
 });
+
+// ---------------------------------------------------------------------------
+// Notificações push
+// ---------------------------------------------------------------------------
+
+const PUSH_TITLE_MAX = 65;
+const PUSH_BODY_MAX = 240;
+const PUSH_MAX_RECIPIENTS = 500;
+const PUSH_MAX_SCHEDULE_DAYS = 90;
+const PUSH_HISTORY_LIMIT = 50;
+const PUSH_SCREENS = new Set(['player', 'characterSelection']);
+
+const INTEL_TYPE_LABEL = { AUDIO: 'de áudio', TEXT: 'de texto', VISUAL: 'visual' };
+
+/** Agente ativo dentro da pasta, ou null (doc apagado, arquivado ou de outra mesa). */
+async function pushCharacter(uid, characterId, wsId) {
+  const snap = await getFirestore().doc(`users/${uid}/characters/${characterId}`).get();
+  if (!snap.exists) return null;
+  const data = snap.data() || {};
+  if (data.archived === true || data.workspaceId !== wsId) return null;
+  return data;
+}
+
+/**
+ * Entrega automática para um agente. O texto nunca cita o título do item, que pode
+ * ser sigiloso. collapseId faz várias entregas seguidas virarem um aviso só.
+ */
+async function pushDelivery({ uid, characterId, wsId, category, title, body, data }) {
+  const character = await pushCharacter(uid, characterId, wsId);
+  if (!character) return;
+  const codename = character.codinome || 'Agente';
+  const result = await sendToUser(uid, {
+    title,
+    body: `${codename}: ${body}`,
+    category,
+    data: { characterId, wsId, screen: 'player', ...data },
+    collapseId: `${category}-${characterId}`,
+  });
+  await logPush(wsId, {
+    kind: 'auto',
+    category,
+    title,
+    campaignId: character.campaignId || null,
+    recipients: 1,
+    sent: result.sent,
+    failed: result.failed,
+    skipped: result.skipped,
+    targetUid: uid,
+  });
+}
+
+exports.pushOnIntelGranted = onDocumentCreated(
+  { document: 'users/{uid}/characters/{characterId}/intel/{intelId}', region: REGION },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data.source !== 'admin' || !isId(data.workspaceId)) return;
+    const { uid, characterId, intelId } = event.params;
+    const typeLabel = INTEL_TYPE_LABEL[data.type];
+    await pushDelivery({
+      uid,
+      characterId,
+      wsId: data.workspaceId,
+      category: 'intel',
+      title: 'TRANSMISSÃO RECEBIDA',
+      body: `novo arquivo${typeLabel ? ` ${typeLabel}` : ''} no seu terminal.`,
+      data: { intelId },
+    });
+  },
+);
+
+exports.pushOnAchievementGranted = onDocumentCreated(
+  { document: 'users/{uid}/characters/{characterId}/achievements/{achievementId}', region: REGION },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data.source !== 'admin' || !isId(data.workspaceId)) return;
+    const { uid, characterId } = event.params;
+    await pushDelivery({
+      uid,
+      characterId,
+      wsId: data.workspaceId,
+      category: 'achievements',
+      title: 'CONDECORAÇÃO REGISTRADA',
+      body: 'nova conquista no seu dossiê.',
+      data: { achievementId: data.achievementId },
+    });
+  },
+);
+
+/**
+ * SMS de NPC. O cliente marca notifyUid só na primeira fala do NPC em cada diálogo,
+ * então um diálogo longo gera um aviso. A regra impede jogador de gravar esse campo.
+ */
+exports.pushOnNpcMessage = onDocumentCreated(
+  { document: 'workspaces/{wsId}/groups/{groupId}/messages/{messageId}', region: REGION },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || !isId(data.notifyUid) || !isId(data.recipientId) || !data.npcId) return;
+    const { wsId, groupId } = event.params;
+    await pushDelivery({
+      uid: data.notifyUid,
+      characterId: data.recipientId,
+      wsId,
+      category: 'sms',
+      title: 'MENSAGEM CRIPTOGRAFADA',
+      body: 'novo contato no canal seguro.',
+      data: { groupId, threadId: data.dialogueId || data.npcId },
+    });
+  },
+);
+
+function pushText(value, name, max) {
+  if (typeof value !== 'string' || value.trim().length === 0 || value.trim().length > max) {
+    throw new HttpsError('invalid-argument', `${name} inválido.`);
+  }
+  return value.trim();
+}
+
+function pushScreen(value) {
+  return PUSH_SCREENS.has(value) ? value : 'player';
+}
+
+/** Primeiro agente de cada conta: o aparelho recebe um aviso por conta. */
+function uniqueRecipients(list) {
+  const byUid = new Map();
+  for (const item of list) {
+    if (isId(item?.uid) && !byUid.has(item.uid)) {
+      byUid.set(item.uid, { uid: item.uid, characterId: isId(item.characterId) ? item.characterId : null });
+    }
+  }
+  return Array.from(byUid.values());
+}
+
+/**
+ * Resolve o alvo dentro da pasta, sempre limitado ao acesso do mestre. Co-mestre só
+ * alcança as próprias campanhas; a pasta inteira é só do dono.
+ * Devolve { recipients, campaignId, label }.
+ */
+async function resolvePushTarget(wsId, target, access) {
+  const db = getFirestore();
+  const kind = target?.kind;
+  if (kind === 'characters') {
+    const items = Array.isArray(target.items) ? target.items : [];
+    if (items.length === 0 || items.length > PUSH_MAX_RECIPIENTS) {
+      throw new HttpsError('invalid-argument', 'Lista de agentes inválida.');
+    }
+    const resolved = await Promise.all(items.map(async (item) => {
+      requireId(item?.uid, 'uid');
+      requireId(item?.characterId, 'characterId');
+      const character = await pushCharacter(item.uid, item.characterId, wsId);
+      if (!character) throw new HttpsError('not-found', 'Agente não encontrado nesta mesa.');
+      const campaigns = characterCampaigns(character);
+      if (!accessCoversAny(access, campaigns)) {
+        throw new HttpsError('permission-denied', 'Agente fora das suas campanhas.');
+      }
+      return { character, campaignId: campaigns.find((c) => accessCoversCampaign(access, c)) ?? null };
+    }));
+    return {
+      recipients: uniqueRecipients(items),
+      campaignId: resolved[0].campaignId,
+      label: items.length === 1 ? resolved[0].character.codinome || items[0].characterId : `${items.length} agentes`,
+    };
+  }
+  if (kind === 'group') {
+    requireId(target.groupId, 'groupId');
+    const snap = await db.doc(`workspaces/${wsId}/groups/${target.groupId}`).get();
+    if (!snap.exists) throw new HttpsError('not-found', 'Esquadrão não encontrado.');
+    const group = snap.data() || {};
+    const campaigns = groupCampaigns(group);
+    if (!accessCoversAny(access, campaigns)) {
+      throw new HttpsError('permission-denied', 'Esquadrão fora das suas campanhas.');
+    }
+    return {
+      recipients: uniqueRecipients(Array.isArray(group.characterSlots) ? group.characterSlots : []),
+      campaignId: campaigns[0] || null,
+      label: group.name || target.groupId,
+    };
+  }
+  if (kind === 'campaign') {
+    requireId(target.campaignId, 'campaignId');
+    if (!accessCoversCampaign(access, target.campaignId)) {
+      throw new HttpsError('permission-denied', 'Sem acesso a esta campanha.');
+    }
+    const players = await db.collection(`workspaces/${wsId}/players`)
+      .where('campaignIds', 'array-contains', target.campaignId).get();
+    const recipients = await Promise.all(players.docs.map(async (playerDoc) => {
+      const chars = await db.collection(`users/${playerDoc.id}/characters`).where('workspaceId', '==', wsId).get();
+      const match = chars.docs.find((d) =>
+        d.data()?.archived !== true && characterCampaigns(d.data() || {}).includes(target.campaignId));
+      return { uid: playerDoc.id, characterId: match?.id ?? null };
+    }));
+    return { recipients: uniqueRecipients(recipients), campaignId: target.campaignId, label: target.campaignId };
+  }
+  if (kind === 'all') {
+    if (access.role !== 'owner') {
+      throw new HttpsError('permission-denied', 'Apenas o dono envia para a pasta inteira.');
+    }
+    const players = await db.collection(`workspaces/${wsId}/players`).get();
+    return {
+      recipients: uniqueRecipients(players.docs.map((d) => {
+        const ids = Array.isArray(d.data()?.characterIds) ? d.data().characterIds : [];
+        return { uid: d.id, characterId: ids.length === 1 ? ids[0] : null };
+      })),
+      campaignId: null,
+      label: 'all',
+    };
+  }
+  throw new HttpsError('invalid-argument', 'Alvo inválido.');
+}
+
+/** Resolve, envia e registra um push de mestre. Devolve os totais do envio. */
+async function sendPushToTarget({ wsId, target, access, title, body, screen, category, createdBy, kind }) {
+  const resolved = await resolvePushTarget(wsId, target, access);
+  if (resolved.recipients.length > PUSH_MAX_RECIPIENTS) {
+    throw new HttpsError('resource-exhausted', 'Destinatários demais.');
+  }
+  const results = await Promise.all(resolved.recipients.map(({ uid, characterId }) => sendToUser(uid, {
+    title,
+    body,
+    category,
+    data: { wsId, screen, ...(characterId ? { characterId } : {}) },
+  }).catch((err) => {
+    console.error('[push] falha ao enviar para conta:', uid, err);
+    return { sent: 0, failed: 1, skipped: null };
+  })));
+  const totals = {
+    recipients: resolved.recipients.length,
+    sent: results.reduce((sum, r) => sum + r.sent, 0),
+    failed: results.reduce((sum, r) => sum + r.failed, 0),
+  };
+  await logPush(wsId, {
+    kind,
+    category,
+    title,
+    body,
+    campaignId: resolved.campaignId,
+    createdBy,
+    targetKind: target.kind,
+    targetLabel: resolved.label,
+    ...totals,
+  });
+  return totals;
+}
+
+/** Mensagem do mestre, enviada na hora. */
+exports.adminSendPush = onCall({ region: REGION }, async (request) => {
+  const { wsId, target, title, body, screen } = request.data || {};
+  requireId(wsId, 'wsId');
+  const access = await assertGm(request, wsId);
+  const totals = await sendPushToTarget({
+    wsId,
+    target,
+    access,
+    title: pushText(title, 'Título', PUSH_TITLE_MAX),
+    body: pushText(body, 'Mensagem', PUSH_BODY_MAX),
+    screen: pushScreen(screen),
+    category: 'gm',
+    createdBy: request.auth.uid,
+    kind: 'manual',
+  });
+  return { success: true, ...totals };
+});
+
+/** Agenda um lembrete; o alvo é validado agora e de novo na hora do envio. */
+exports.schedulePush = onCall({ region: REGION }, async (request) => {
+  const { wsId, target, title, body, screen, sendAt } = request.data || {};
+  requireId(wsId, 'wsId');
+  const access = await assertGm(request, wsId);
+  const when = new Date(sendAt);
+  const now = Date.now();
+  if (Number.isNaN(when.getTime()) || when.getTime() < now - 60_000
+    || when.getTime() > now + PUSH_MAX_SCHEDULE_DAYS * 86_400_000) {
+    throw new HttpsError('invalid-argument', 'Data de envio inválida.');
+  }
+  const resolved = await resolvePushTarget(wsId, target, access);
+  const ref = await getFirestore().collection(`workspaces/${wsId}/scheduledPushes`).add({
+    sendAt: Timestamp.fromDate(when),
+    target,
+    title: pushText(title, 'Título', PUSH_TITLE_MAX),
+    body: pushText(body, 'Mensagem', PUSH_BODY_MAX),
+    screen: pushScreen(screen),
+    status: 'pending',
+    campaignId: resolved.campaignId,
+    targetLabel: resolved.label,
+    createdBy: request.auth.uid,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return { success: true, id: ref.id };
+});
+
+/** Cancela lembrete pendente: o dono cancela qualquer um; o co-mestre, os das suas campanhas. */
+exports.cancelScheduledPush = onCall({ region: REGION }, async (request) => {
+  const { wsId, id } = request.data || {};
+  requireId(wsId, 'wsId');
+  requireId(id, 'id');
+  const access = await assertGm(request, wsId);
+  const ref = getFirestore().doc(`workspaces/${wsId}/scheduledPushes/${id}`);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Lembrete não encontrado.');
+  const data = snap.data() || {};
+  if (access.role !== 'owner' && !accessCoversCampaign(access, data.campaignId)) {
+    throw new HttpsError('permission-denied', 'Lembrete fora das suas campanhas.');
+  }
+  if (data.status !== 'pending') {
+    throw new HttpsError('failed-precondition', 'Lembrete já processado.');
+  }
+  await ref.update({ status: 'cancelled', cancelledBy: request.auth.uid });
+  return { success: true };
+});
+
+/** Histórico e lembretes da pasta, filtrados pelo acesso de quem pede. */
+exports.listPushActivity = onCall({ region: REGION }, async (request) => {
+  const { wsId } = request.data || {};
+  requireId(wsId, 'wsId');
+  const access = await assertGm(request, wsId);
+  const db = getFirestore();
+  const [logSnap, scheduledSnap] = await Promise.all([
+    db.collection(`workspaces/${wsId}/pushLog`).orderBy('createdAt', 'desc').limit(PUSH_HISTORY_LIMIT).get(),
+    db.collection(`workspaces/${wsId}/scheduledPushes`).orderBy('sendAt', 'desc').limit(PUSH_HISTORY_LIMIT).get(),
+  ]);
+  const visible = (d) => access.role === 'owner' || accessCoversCampaign(access, d.data()?.campaignId);
+  return {
+    log: logSnap.docs.filter(visible).map((d) => {
+      const data = d.data() || {};
+      return {
+        id: d.id,
+        kind: data.kind,
+        category: data.category,
+        title: data.title,
+        body: data.body ?? null,
+        targetLabel: data.targetLabel ?? null,
+        recipients: data.recipients ?? 0,
+        sent: data.sent ?? 0,
+        failed: data.failed ?? 0,
+        createdAt: toIso(data.createdAt),
+      };
+    }),
+    scheduled: scheduledSnap.docs.filter(visible).map((d) => {
+      const data = d.data() || {};
+      return {
+        id: d.id,
+        title: data.title,
+        body: data.body,
+        targetLabel: data.targetLabel ?? null,
+        status: data.status,
+        sendAt: toIso(data.sendAt),
+      };
+    }),
+  };
+});
+
+/** Marca o lembrete como em envio numa transação: duas execuções nunca mandam o mesmo. */
+async function claimScheduledPush(ref) {
+  return getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists || snap.data()?.status !== 'pending') return null;
+    tx.update(ref, { status: 'sending' });
+    return snap.data();
+  });
+}
+
+exports.dispatchScheduledPushes = onSchedule(
+  { schedule: 'every 5 minutes', region: REGION, timeZone: 'America/Sao_Paulo' },
+  async () => {
+    const due = await getFirestore().collectionGroup('scheduledPushes')
+      .where('status', '==', 'pending')
+      .where('sendAt', '<=', Timestamp.now())
+      .limit(200)
+      .get();
+
+    await Promise.all(due.docs.map(async (scheduled) => {
+      const data = await claimScheduledPush(scheduled.ref);
+      if (!data) return;
+      const wsId = scheduled.ref.parent.parent.id;
+      try {
+        // O acesso pode ter mudado desde o agendamento.
+        const creator = await getFirestore().doc(`users/${data.createdBy}`).get();
+        const access = creator.data()?.suspended === true ? null : await getGmAccess(data.createdBy, wsId);
+        if (!access) throw new HttpsError('permission-denied', 'Mestre sem acesso à pasta.');
+        const totals = await sendPushToTarget({
+          wsId,
+          target: data.target,
+          access,
+          title: data.title,
+          body: data.body,
+          screen: pushScreen(data.screen),
+          category: 'reminders',
+          createdBy: data.createdBy,
+          kind: 'scheduled',
+        });
+        await scheduled.ref.update({ status: 'sent', sentAt: FieldValue.serverTimestamp(), ...totals });
+      } catch (err) {
+        console.error('[push] lembrete falhou:', scheduled.ref.path, err);
+        await scheduled.ref.update({ status: 'failed', error: String(err?.message || err).slice(0, 300) });
+      }
+    }));
+  },
+);

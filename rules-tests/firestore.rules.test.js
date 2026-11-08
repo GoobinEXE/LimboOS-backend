@@ -508,3 +508,35 @@ describe('legado', () => {
   test('jogador não lê system antigo', () => assertFails(get(PLAYER, 'system/limboState')));
   test('anônimo não lê nada', () => assertFails(get('anon', `${WA}/campaigns/X`)));
 });
+
+describe('push: aparelhos, preferências e histórico', () => {
+  const device = { token: 'tok', platform: 'ios', enabled: true, badge: 0 };
+  const path = `users/${PLAYER}/devices/d1`;
+
+  test('dono grava e lê o próprio aparelho', async () => {
+    await assertSucceeds(setDoc(doc(db(PLAYER), path), device));
+    await assertSucceeds(get(PLAYER, path));
+  });
+  test('mestre não lê aparelho do jogador', () => assertFails(get(A, path)));
+  test('outra conta não grava aparelho', () =>
+    assertFails(setDoc(doc(db(B), path), device)));
+  test('cliente não soma badge', () =>
+    assertFails(setDoc(doc(db(PLAYER), path), { ...device, badge: 5 })));
+  test('campo fora da lista é recusado', () =>
+    assertFails(setDoc(doc(db(PLAYER), path), { ...device, extra: 1 })));
+  test('jogador grava as próprias preferências', () =>
+    assertSucceeds(updateDoc(doc(db(PLAYER), `users/${PLAYER}`), { notificationPrefs: { intel: false } })));
+  test('categoria desconhecida é recusada', () =>
+    assertFails(updateDoc(doc(db(PLAYER), `users/${PLAYER}`), { notificationPrefs: { spam: true } })));
+  test('mestre não grava preferências do jogador', () =>
+    assertFails(updateDoc(doc(db(A), `users/${PLAYER}`), { notificationPrefs: { intel: false } })));
+  test('jogador não marca notifyUid em mensagem do esquadrão', () =>
+    assertFails(setDoc(doc(db(PLAYER), `${WA}/groups/g-x/messages/forjada`), {
+      senderId: 'chX', text: 'oi', createdAt: serverTimestamp(), notifyUid: PLAYER_Y,
+    })));
+  test('histórico e lembretes não têm acesso direto', async () => {
+    await assertFails(list(A, `${WA}/pushLog`));
+    await assertFails(list(A, `${WA}/scheduledPushes`));
+    await assertFails(setDoc(doc(db(A), `${WA}/scheduledPushes/s1`), { title: 'x' }));
+  });
+});

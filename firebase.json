@@ -16,6 +16,14 @@
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         {
+          "source": "/.well-known/apple-app-site-association",
+          "destination": "/well-known/apple-app-site-association.json"
+        },
+        {
+          "source": "/.well-known/assetlinks.json",
+          "destination": "/well-known/assetlinks.json"
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
