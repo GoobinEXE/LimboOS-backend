@@ -1,0 +1,141 @@
+rules_version = '2';
+
+// PROTÓTIPO da Fase 0 (spike de provabilidade). NÃO substitui backend/firestore.rules.
+// Cada coleção abaixo isola uma variante de regra para comparar no emulador:
+//   intelA        → campaignIds[] + hasAny(get(members/uid).campaignIds)
+//   intelC        → campaignId único + `in` get(members/uid).campaignIds
+//   intelB        → gmUids[] desnormalizado + request.auth.uid in gmUids
+//   campaigns/{c} → conteúdo por caminho (P), campanha vem do wildcard
+//   achievements  → leitura do jogador via players/{uid}.campaignIds (hasAny e `in`)
+//   characters    → collectionGroup com workspaceId (dono e co-mestre)
+// Correção do plano: `library/intel/{id}` é inválido (library seria coleção e intel
+// documento, então {id} cairia em número ímpar de segmentos). Coleções ficam planas
+// na pasta: workspaces/{ws}/intel/{id}, workspaces/{ws}/achievements/{id} etc.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ws) {
+      return signedIn() && request.auth.uid == ws;
+    }
+
+    function memberPath(ws) {
+      return /databases/$(database)/documents/workspaces/$(ws)/members/$(request.auth.uid);
+    }
+
+    function playerPath(ws) {
+      return /databases/$(database)/documents/workspaces/$(ws)/players/$(request.auth.uid);
+    }
+
+    function isMember(ws) {
+      return signedIn() && exists(memberPath(ws));
+    }
+
+    function memberCampaigns(ws) {
+      return get(memberPath(ws)).data.campaignIds;
+    }
+
+    function isPlayer(ws) {
+      return signedIn() && exists(playerPath(ws));
+    }
+
+    function playerCampaigns(ws) {
+      return get(playerPath(ws)).data.campaignIds;
+    }
+
+    match /workspaces/{ws} {
+      allow read: if isOwner(ws);
+
+      // Co-mestre lê só o próprio documento de membro; listar membros é do dono.
+      match /members/{uid} {
+        allow get: if isOwner(ws) || (signedIn() && request.auth.uid == uid);
+        allow list: if isOwner(ws);
+      }
+
+      match /players/{uid} {
+        allow get: if isOwner(ws) || (signedIn() && request.auth.uid == uid);
+        allow list: if isOwner(ws);
+      }
+
+      // Variante A: campaignIds[] no documento, hasAny contra a lista do membro.
+      match /intelA/{id} {
+        allow read: if isOwner(ws)
+          || (isMember(ws) && resource.data.campaignIds.hasAny(memberCampaigns(ws)));
+      }
+
+      // Variante C: campo único campaignId, `in` contra a lista do membro.
+      match /intelC/{id} {
+        allow read: if isOwner(ws)
+          || (isMember(ws) && resource.data.campaignId in memberCampaigns(ws));
+      }
+
+      // Variante B: gmUids[] desnormalizado (mantido por Cloud Function).
+      match /intelB/{id} {
+        allow read: if isOwner(ws)
+          || (signedIn() && request.auth.uid in resource.data.gmUids);
+      }
+
+      // Variante P: conteúdo da campanha por caminho; a campanha vem do wildcard.
+      match /campaigns/{c} {
+        allow read: if isOwner(ws)
+          || (isMember(ws) && c in memberCampaigns(ws))
+          || (isPlayer(ws) && c in playerCampaigns(ws));
+
+        match /qr/{id} {
+          allow read: if isOwner(ws)
+            || (isMember(ws) && c in memberCampaigns(ws));
+        }
+
+        // Estado público da campanha (antigo system/limboState): jogador da campanha lê.
+        match /state/{doc} {
+          allow read: if isOwner(ws)
+            || (isMember(ws) && c in memberCampaigns(ws))
+            || (isPlayer(ws) && c in playerCampaigns(ws));
+        }
+      }
+
+      // Conquistas com campaignIds[]: co-mestre e jogador via hasAny.
+      match /achievements/{id} {
+        allow read: if isOwner(ws)
+          || (isMember(ws) && resource.data.campaignIds.hasAny(memberCampaigns(ws)))
+          || (isPlayer(ws) && resource.data.campaignIds.hasAny(playerCampaigns(ws)));
+      }
+
+      // Conquistas com campaignId único: jogador via `in`.
+      match /achievementsC/{id} {
+        allow read: if isOwner(ws)
+          || (isMember(ws) && resource.data.campaignId in memberCampaigns(ws))
+          || (isPlayer(ws) && resource.data.campaignId in playerCampaigns(ws));
+      }
+    }
+
+    // Convites: sem acesso direto do cliente (só Cloud Functions).
+    match /invites/{token} {
+      allow read, write: if false;
+    }
+
+    // Conta pessoal e agentes: o próprio usuário lê os seus.
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      match /characters/{charId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // collectionGroup('characters'): dono da mesa pelo workspaceId; co-mestre pelo
+    // get() no members da pasta indicada no próprio documento; variante B por gmUids.
+    match /{path=**}/characters/{charId} {
+      allow read: if signedIn() && (
+        resource.data.workspaceId == request.auth.uid
+        || request.auth.uid in resource.data.get('gmUids', [])
+        || (exists(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)/members/$(request.auth.uid))
+            && resource.data.campaignId in get(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)/members/$(request.auth.uid)).data.campaignIds)
+      );
+    }
+  }
+}

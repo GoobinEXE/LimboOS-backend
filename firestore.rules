@@ -1,41 +1,159 @@
 rules_version = '2';
+
+// Modelo multi-tenant (Fase 1). Cada mestre tem uma pasta em workspaces/{ws}, com
+// ws == uid do dono. Co-mestres ficam em workspaces/{ws}/members/{uid} com a lista
+// campaignIds a que têm acesso; jogadores ficam em workspaces/{ws}/players/{uid}
+// (roster mantido por Cloud Functions). O admin da plataforma (claim platformAdmin)
+// não recebe acesso a conteúdo de pasta nenhuma.
+//
+// Formas de escopo, provadas no emulador (backend/rules-tests/RESULTADOS.md):
+//   - campaignIds[] + global: conquistas, NPCs, diálogos, jukebox e esquadrões;
+//     co-mestre consulta com array-contains da campanha ou global == true.
+//   - campaignId único (null = só o dono): mídia, pastas, QR, log e playEvents;
+//     co-mestre consulta com campaignId == X.
+//   - por caminho: campaigns/{c}/state/{doc}.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthenticated() {
+
+    // ---------- Identidade ----------
+
+    function signedIn() {
       return request.auth != null;
     }
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function uid() {
+      return request.auth.uid;
     }
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        userDoc().role == 'admin'
-      );
-    }
-    function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+    function userPath(u) {
+      return /databases/$(database)/documents/users/$(u);
     }
     function isSuspended() {
-      return isAuthenticated()
-        && userDoc().get('suspended', false) == true
-        && userDoc().get('role', 'player') != 'admin';
+      return exists(userPath(uid()))
+        && get(userPath(uid())).data.get('suspended', false) == true;
     }
-    function isActiveUser() {
-      return isAuthenticated() && !isSuspended();
+    function isActive() {
+      return signedIn() && !isSuspended();
+    }
+    function isPlatformAdmin() {
+      return signedIn() && request.auth.token.get('platformAdmin', false) == true;
+    }
+    function isSelf(u) {
+      return signedIn() && uid() == u;
     }
     function isValidPayloadSize() {
       return request.resource.data.keys().size() < 50;
     }
-    function ownerCannotEscalatePrivileges() {
-      return request.resource.data.role == resource.data.role
-        && request.resource.data.get('suspended', false) == resource.data.get('suspended', false)
-        && request.resource.data.get('hasTerminalAccess', false) == resource.data.get('hasTerminalAccess', false)
-        && request.resource.data.get('hasMacAccess', false) == resource.data.get('hasMacAccess', false);
+
+    // ---------- Pasta, co-mestre e jogador ----------
+
+    function memberPath(ws) {
+      return /databases/$(database)/documents/workspaces/$(ws)/members/$(uid());
     }
-    function ownerForceFlagsOnlyClear() {
-      return request.resource.data.get('forceTerminalOpen', false) == false
-        && request.resource.data.get('forceMacOpen', false) == false;
+    function playerPath(ws) {
+      return /databases/$(database)/documents/workspaces/$(ws)/players/$(uid());
+    }
+    function isOwner(ws) {
+      return isActive() && uid() == ws;
+    }
+    function isMember(ws) {
+      return isActive() && exists(memberPath(ws));
+    }
+    function memberCampaigns(ws) {
+      return get(memberPath(ws)).data.get('campaignIds', []);
+    }
+    function isPlayer(ws) {
+      return isActive() && exists(playerPath(ws));
+    }
+    function playerCampaigns(ws) {
+      return get(playerPath(ws)).data.get('campaignIds', []);
+    }
+    function isGm(ws) {
+      return isOwner(ws) || isMember(ws);
+    }
+    // Mestre (dono ou co-mestre) com acesso à campanha c.
+    function gmOfCampaign(ws, c) {
+      return isOwner(ws) || (isMember(ws) && c in memberCampaigns(ws));
+    }
+    function playerOfCampaign(ws, c) {
+      return isPlayer(ws) && c in playerCampaigns(ws);
+    }
+
+    // ---------- Escopo por lista (campaignIds[] + global) ----------
+
+    function listOf(d) {
+      return d.get('campaignIds', []);
+    }
+    function isGlobal(d) {
+      return d.get('global', false) == true;
+    }
+    function cogmReadsList(ws, d) {
+      return isMember(ws) && (isGlobal(d) || listOf(d).hasAny(memberCampaigns(ws)));
+    }
+    // Co-mestre cria item só nas próprias campanhas e nunca como global da pasta.
+    function cogmCreatesList(ws) {
+      return isMember(ws)
+        && !isGlobal(request.resource.data)
+        && listOf(request.resource.data).size() > 0
+        && listOf(request.resource.data).hasOnly(memberCampaigns(ws));
+    }
+    // Co-mestre edita item ligado à sua campanha; só mexe na lista se ela estiver
+    // inteira dentro das campanhas dele, antes e depois.
+    function cogmUpdatesList(ws) {
+      return isMember(ws)
+        && !isGlobal(resource.data)
+        && !isGlobal(request.resource.data)
+        && listOf(resource.data).hasAny(memberCampaigns(ws))
+        && (
+          listOf(request.resource.data) == listOf(resource.data)
+          || (
+            listOf(resource.data).hasOnly(memberCampaigns(ws))
+            && listOf(request.resource.data).size() > 0
+            && listOf(request.resource.data).hasOnly(memberCampaigns(ws))
+          )
+        );
+    }
+    function cogmDeletesList(ws) {
+      return isMember(ws)
+        && !isGlobal(resource.data)
+        && listOf(resource.data).hasOnly(memberCampaigns(ws));
+    }
+
+    // ---------- Escopo por campanha única (campaignId; null = só o dono) ----------
+
+    function cogmReadsSingle(ws, d) {
+      return isMember(ws) && d.get('campaignId', null) in memberCampaigns(ws);
+    }
+    function cogmWritesSingle(ws) {
+      return isMember(ws)
+        && request.resource.data.get('campaignId', null) in memberCampaigns(ws)
+        && (resource == null || resource.data.get('campaignId', null) in memberCampaigns(ws));
+    }
+
+    // ---------- Agentes ----------
+
+    function charWorkspace(d) {
+      return d.get('workspaceId', '');
+    }
+    function charMemberPath(d) {
+      return /databases/$(database)/documents/workspaces/$(charWorkspace(d))/members/$(uid());
+    }
+    function charCampaigns(d) {
+      return d.get('unlockedCampaigns', []);
+    }
+    function isCoGmOfChar(d) {
+      return charWorkspace(d) != ''
+        && exists(charMemberPath(d))
+        && (
+          d.get('campaignId', '') in get(charMemberPath(d)).data.get('campaignIds', [])
+          || charCampaigns(d).hasAny(get(charMemberPath(d)).data.get('campaignIds', []))
+        );
+    }
+    // Mestre do agente: dono da pasta do agente ou co-mestre de uma campanha dele.
+    function isGmOfChar(d) {
+      return isActive() && charWorkspace(d) != '' && (charWorkspace(d) == uid() || isCoGmOfChar(d));
+    }
+    function charDoc(u, c) {
+      return get(/databases/$(database)/documents/users/$(u)/characters/$(c)).data;
     }
     function characterOwnerSafeKeys() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -51,198 +169,322 @@ service cloud.firestore {
       ]);
     }
     function characterOwnerSafeUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
       return characterOwnerSafeKeys()
         && request.resource.data.get('forceTerminalOpen', false) == false
         && request.resource.data.get('forceMacOpen', false) == false
+        && (!('pendingVideoPlay' in changed) || request.resource.data.pendingVideoPlay == null)
+        && (!('codinome' in changed) || (
+          request.resource.data.codinome is string
+          && request.resource.data.codinome.size() > 0
+          && request.resource.data.codinome.size() < 64
+        ))
+        && (!('phoneNumber' in changed) || (
+          request.resource.data.phoneNumber is string
+          && request.resource.data.phoneNumber.size() < 32
+        ))
+        && (!('spotifyPlaylistUrl' in changed) || (
+          request.resource.data.spotifyPlaylistUrl is string
+          && request.resource.data.spotifyPlaylistUrl.size() < 512
+        ));
+    }
+    // Jogador já no roster de uma pasta cria outro agente naquela mesa.
+    function characterOwnerSafeCreate() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'codinome', 'agentStatus', 'dangerLevel', 'archived', 'createdAt', 'workspaceId'
+        ])
+        && d.codinome is string
+        && d.codinome.size() > 0
+        && d.codinome.size() < 64
+        && d.agentStatus == 'vivo'
+        && d.dangerLevel == 1
+        && d.archived == false
+        && d.workspaceId is string
+        && exists(/databases/$(database)/documents/workspaces/$(d.workspaceId)/players/$(uid()));
+    }
+    // Mestre altera o agente sem trocar a pasta; co-mestre não move o agente para
+    // campanhas que não são dele.
+    function gmCharacterUpdate() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isGmOfChar(before)
+        && charWorkspace(after) == charWorkspace(before)
         && (
-          !('pendingVideoPlay' in request.resource.data.diff(resource.data).affectedKeys())
-          || request.resource.data.pendingVideoPlay == null
-        )
-        && (
-          !('codinome' in request.resource.data.diff(resource.data).affectedKeys())
+          charWorkspace(before) == uid()
           || (
-            request.resource.data.codinome is string
-            && request.resource.data.codinome.size() > 0
-            && request.resource.data.codinome.size() < 64
-          )
-        )
-        && (
-          !('phoneNumber' in request.resource.data.diff(resource.data).affectedKeys())
-          || (
-            request.resource.data.phoneNumber is string
-            && request.resource.data.phoneNumber.size() < 32
-          )
-        )
-        && (
-          !('spotifyPlaylistUrl' in request.resource.data.diff(resource.data).affectedKeys())
-          || (
-            request.resource.data.spotifyPlaylistUrl is string
-            && request.resource.data.spotifyPlaylistUrl.size() < 512
+            (after.get('campaignId', '') == before.get('campaignId', '')
+              || after.get('campaignId', '') in get(charMemberPath(before)).data.get('campaignIds', []))
+            && charCampaigns(after).toSet().difference(charCampaigns(before).toSet())
+                 .hasOnly(get(charMemberPath(before)).data.get('campaignIds', []))
+            && charCampaigns(before).toSet().difference(charCampaigns(after).toSet())
+                 .hasOnly(get(charMemberPath(before)).data.get('campaignIds', []))
           )
         );
     }
-    function characterOwnerSafeCreate() {
-      return request.resource.data.keys().hasOnly([
-          'codinome', 'agentStatus', 'dangerLevel', 'archived', 'createdAt'
-        ])
-        && request.resource.data.codinome is string
-        && request.resource.data.codinome.size() > 0
-        && request.resource.data.codinome.size() < 64
-        && request.resource.data.agentStatus == 'vivo'
-        && request.resource.data.dangerLevel == 1
-        && request.resource.data.archived == false;
-    }
-    function isGroupMember(groupId) {
-      return isActiveUser()
-        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.get('memberUids', []);
-    }
-    function messageSenderIsOwnCharacter(groupId) {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)/characters/$(request.resource.data.senderId))
-        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.get('memberUids', []);
+
+    // ---------- Pastas ----------
+
+    match /workspaces/{ws} {
+      allow get: if isGm(ws) || isPlayer(ws);
+      allow list: if false;
+      allow create: if isActive()
+        && uid() == ws
+        && request.resource.data.keys().hasOnly(['ownerUid', 'name', 'createdAt'])
+        && request.resource.data.ownerUid == ws
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 80;
+      allow update: if isOwner(ws)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 80;
+      allow delete: if false;
+
+      // Co-mestres: escritos só por Cloud Functions (convite e remoção).
+      match /members/{memberUid} {
+        allow get: if isOwner(ws) || (isActive() && uid() == memberUid);
+        allow list: if isOwner(ws);
+        allow write: if false;
+      }
+
+      // Roster de jogadores: criado e mantido por Cloud Functions. O dono só
+      // anota (notes) e dá um rótulo próprio ao jogador (gmLabel).
+      match /players/{playerUid} {
+        allow get: if isOwner(ws)
+          || (isActive() && uid() == playerUid)
+          || cogmReadsList(ws, resource.data);
+        allow list: if isOwner(ws) || cogmReadsList(ws, resource.data);
+        allow update: if isOwner(ws)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes', 'gmLabel'])
+          && request.resource.data.get('notes', '').size() < 4000
+          && request.resource.data.get('gmLabel', '').size() < 80;
+        allow create, delete: if false;
+      }
+
+      match /campaigns/{c} {
+        allow read: if gmOfCampaign(ws, c) || playerOfCampaign(ws, c);
+        allow create, delete: if isOwner(ws);
+        allow update: if gmOfCampaign(ws, c);
+
+        // Estado da sessão da campanha: live (Limbo, reparo de disco) e settings.
+        match /state/{stateDoc} {
+          allow read: if gmOfCampaign(ws, c) || playerOfCampaign(ws, c);
+          allow write: if gmOfCampaign(ws, c);
+        }
+      }
+
+      // Esquadrões: campaignIds[] derivado de campaignId + unlockedCampaigns.
+      // campaignIds é derivado (trigger syncGroup); o co-mestre também não pode pôr
+      // campanhas alheias em campaignId/unlockedCampaigns, de onde ele é derivado.
+      function groupCampaignFieldsOk(before, after, mine) {
+        return (
+            after.get('campaignId', null) == null
+            || after.get('campaignId', null) in mine
+            || (before != null && after.get('campaignId', null) == before.get('campaignId', null))
+          )
+          && (
+            after.get('unlockedCampaigns', []).hasOnly(mine)
+            || (before != null && after.get('unlockedCampaigns', []) == before.get('unlockedCampaigns', []))
+          );
+      }
+
+      match /groups/{groupId} {
+        allow read: if isOwner(ws)
+          || cogmReadsList(ws, resource.data)
+          || (isPlayer(ws) && uid() in resource.data.get('memberUids', []));
+        allow create: if isOwner(ws) || (
+          cogmCreatesList(ws)
+          && groupCampaignFieldsOk(null, request.resource.data, memberCampaigns(ws))
+        );
+        allow update: if isOwner(ws) || (
+          cogmUpdatesList(ws)
+          && groupCampaignFieldsOk(resource.data, request.resource.data, memberCampaigns(ws))
+        );
+        allow delete: if isOwner(ws) || cogmDeletesList(ws);
+
+        function groupData() {
+          return get(/databases/$(database)/documents/workspaces/$(ws)/groups/$(groupId)).data;
+        }
+        function gmOfGroup() {
+          return isOwner(ws)
+            || (isMember(ws) && listOf(groupData()).hasAny(memberCampaigns(ws)));
+        }
+        function memberOfGroup() {
+          return isPlayer(ws) && uid() in groupData().get('memberUids', []);
+        }
+
+        match /messages/{messageId} {
+          allow read: if gmOfGroup() || memberOfGroup();
+          allow create: if gmOfGroup() || (
+            memberOfGroup()
+            && request.resource.data.keys().hasAll(['senderId', 'text', 'createdAt'])
+            && request.resource.data.senderId is string
+            && request.resource.data.text is string
+            && request.resource.data.text.size() > 0
+            && request.resource.data.text.size() < 4000
+            && exists(/databases/$(database)/documents/users/$(uid())/characters/$(request.resource.data.senderId))
+          );
+          allow update, delete: if gmOfGroup();
+        }
+      }
+
+      // Biblioteca com escopo por lista.
+      match /achievementDefs/{id} {
+        allow read: if isOwner(ws)
+          || cogmReadsList(ws, resource.data)
+          || (isPlayer(ws) && (isGlobal(resource.data) || listOf(resource.data).hasAny(playerCampaigns(ws))));
+        allow create: if isOwner(ws) || cogmCreatesList(ws);
+        allow update: if isOwner(ws) || cogmUpdatesList(ws);
+        allow delete: if isOwner(ws) || cogmDeletesList(ws);
+      }
+      match /npcContacts/{id} {
+        allow read: if isOwner(ws) || cogmReadsList(ws, resource.data);
+        allow create: if isOwner(ws) || cogmCreatesList(ws);
+        allow update: if isOwner(ws) || cogmUpdatesList(ws);
+        allow delete: if isOwner(ws) || cogmDeletesList(ws);
+      }
+      // Diálogos herdam campaignIds/global do contato (copiados pelo cliente ao salvar).
+      match /npcDialogues/{id} {
+        allow read: if isOwner(ws) || cogmReadsList(ws, resource.data);
+        allow create: if isOwner(ws) || cogmCreatesList(ws);
+        allow update: if isOwner(ws) || cogmUpdatesList(ws);
+        allow delete: if isOwner(ws) || cogmDeletesList(ws);
+      }
+      match /jukeboxTracks/{id} {
+        allow read: if isOwner(ws) || cogmReadsList(ws, resource.data);
+        allow create: if isOwner(ws) || cogmCreatesList(ws);
+        allow update: if isOwner(ws) || cogmUpdatesList(ws);
+        allow delete: if isOwner(ws) || cogmDeletesList(ws);
+      }
+
+      // Biblioteca com escopo por campanha única. Jogador lê mídia só via Functions.
+      match /mediaAssets/{id} {
+        allow read: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+        allow create, update: if isOwner(ws) || cogmWritesSingle(ws);
+        allow delete: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+      }
+      match /mediaFolders/{id} {
+        allow read: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+        allow write: if isOwner(ws);
+      }
+      match /qrRedirects/{sourceId} {
+        allow read: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+        allow create, update: if isOwner(ws) || cogmWritesSingle(ws);
+        allow delete: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+      }
+
+      match /playEvents/{eventId} {
+        allow read: if isOwner(ws)
+          || cogmReadsSingle(ws, resource.data)
+          || (isPlayer(ws) && resource.data.uid == uid());
+        allow create: if isPlayer(ws)
+          && request.resource.data.uid == uid()
+          && isValidPayloadSize();
+        allow update: if isOwner(ws) || (
+          isPlayer(ws)
+          && resource.data.uid == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed'])
+        );
+        allow delete: if isOwner(ws);
+      }
+
+      match /activityLog/{logId} {
+        allow read: if isOwner(ws) || cogmReadsSingle(ws, resource.data);
+        allow create: if isValidPayloadSize() && (
+          isOwner(ws)
+          || (isMember(ws) && request.resource.data.get('campaignId', null) in memberCampaigns(ws))
+          || (isPlayer(ws) && request.resource.data.uid == uid())
+        );
+        allow update, delete: if isOwner(ws);
+      }
+
+      // Preferências da pasta (ex.: itens persistentes entre missões): só o dono.
+      match /config/{configDoc} {
+        allow read, write: if isOwner(ws);
+      }
+
+      // Agregados escritos por Cloud Functions.
+      match /stats/{statDoc} {
+        allow read: if isOwner(ws);
+        allow write: if false;
+      }
     }
 
-    match /campaigns/{campaignId} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
+    // Convites: só Cloud Functions leem e escrevem.
+    match /invites/{inviteId} {
+      allow read, write: if false;
     }
 
-    match /achievementDefs/{defId} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
+    match /platformStats/{statDoc} {
+      allow read: if isPlatformAdmin();
+      allow write: if false;
     }
 
-    match /npcContacts/{contactId} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /npcDialogues/{dialogueId} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /qrRedirects/{redirectId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /activeSessions/{uid} {
-      allow read: if isAdmin();
-      allow create, update, delete: if isOwner(uid) && isActiveUser();
-    }
-
-    match /{path=**}/characters/{characterId} {
-      allow read: if isAdmin();
-    }
-    match /{path=**}/achievements/{achId} {
-      allow read: if isAdmin();
-    }
-    match /{path=**}/stats/{statDoc} {
-      allow read: if isAdmin();
-    }
-
-    match /system/gameEvents {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /system/limboState {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /system/{document=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
+    // ---------- Conta pessoal e agentes ----------
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isSelf(userId) || isPlatformAdmin();
       allow create: if false;
-      allow update: if isAdmin() || (
-        isOwner(userId)
+      allow update: if isSelf(userId)
         && !isSuspended()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'lastLogin', 'masterName', 'displayName', 'forceTerminalOpen', 'forceMacOpen'
-        ])
-        && ownerCannotEscalatePrivileges()
-        && ownerForceFlagsOnlyClear()
-      );
-      allow delete: if isAdmin();
+          'lastLogin', 'masterName', 'displayName'
+        ]);
+      allow delete: if false;
+
+      // Índice "pastas compartilhadas comigo", escrito por Cloud Functions.
+      match /memberships/{wsId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
 
       match /characters/{characterId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create: if isAdmin() || (isOwner(userId) && isActiveUser() && characterOwnerSafeCreate());
-        allow update: if isAdmin() || (isOwner(userId) && isActiveUser() && characterOwnerSafeUpdate());
-        allow delete: if isAdmin();
+        allow read: if isSelf(userId) || isGmOfChar(resource.data);
+        // Agentes de convite são criados pela Function acceptInvite.
+        allow create: if isSelf(userId) && isActive() && characterOwnerSafeCreate();
+        allow update: if (isSelf(userId) && isActive() && characterOwnerSafeUpdate())
+          || gmCharacterUpdate();
+        allow delete: if isActive() && charWorkspace(resource.data) == uid();
 
         match /intel/{intelId} {
-          allow read: if isOwner(userId) || isAdmin();
-          allow write: if isAdmin();
+          allow read: if isSelf(userId) || isGmOfChar(charDoc(userId, characterId));
+          allow write: if isGmOfChar(charDoc(userId, characterId));
         }
         match /achievements/{achId} {
-          allow read: if isOwner(userId) || isAdmin();
-          allow write: if isAdmin();
+          allow read: if isSelf(userId) || isGmOfChar(charDoc(userId, characterId));
+          allow write: if isGmOfChar(charDoc(userId, characterId));
         }
         match /stats/{statDoc} {
-          allow read: if isOwner(userId) || isAdmin();
-          allow create, update: if (isOwner(userId) && isActiveUser() && isValidPayloadSize()) || isAdmin();
-          allow delete: if isOwner(userId) || isAdmin();
+          allow read: if isSelf(userId) || isGmOfChar(charDoc(userId, characterId));
+          allow create, update: if (isSelf(userId) && isActive() && isValidPayloadSize())
+            || isGmOfChar(charDoc(userId, characterId));
+          allow delete: if isSelf(userId) || isGmOfChar(charDoc(userId, characterId));
         }
       }
     }
 
-    match /groups/{groupId} {
-      allow read: if isAdmin()
-        || (isActiveUser() && request.auth.uid in resource.data.get('memberUids', []));
-      allow write: if isAdmin();
-
-      match /messages/{messageId} {
-        allow read: if isAdmin() || isGroupMember(groupId);
-        allow create: if isAdmin() || (
-          isGroupMember(groupId)
-          && request.resource.data.keys().hasAll(['senderId', 'text', 'createdAt'])
-          && request.resource.data.senderId is string
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() < 4000
-          && messageSenderIsOwnCharacter(groupId)
-        );
-        allow update, delete: if isAdmin();
-      }
+    // Consultas do painel: agentes da pasta (dono) ou da campanha (co-mestre).
+    match /{path=**}/characters/{characterId} {
+      allow read: if isGmOfChar(resource.data);
+    }
+    // Conquistas concedidas (workspaceId gravado pelas Functions), só para o dono.
+    match /{path=**}/achievements/{achId} {
+      allow read: if isActive() && resource.data.get('workspaceId', '') == uid();
     }
 
-    match /jukeboxTracks/{trackId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    match /mediaAssets/{assetId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    match /mediaFolders/{folderId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    match /playEvents/{eventId} {
-      allow read: if isAdmin();
-      allow create: if isOwner(request.resource.data.uid) && isActiveUser() && isValidPayloadSize();
-      allow update: if isAdmin() || (
-        isOwner(resource.data.uid)
-        && isActiveUser()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed'])
-      );
-      allow delete: if isAdmin();
-    }
-    match /activityLog/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin() || (
-        isActiveUser()
-        && request.resource.data.uid == request.auth.uid
-        && isValidPayloadSize()
-      );
-      allow update, delete: if isAdmin();
-    }
-    match /{document=**} {
-      allow read, write: if false;
+    // ---------- Legado (pré-migração) ----------
+    // Somente leitura para a conta com o claim admin legado, para conferência e
+    // rollback depois da migração. Remover quando a migração for validada.
+    match /{legacyCollection}/{document=**} {
+      allow read: if signedIn()
+        && request.auth.token.get('admin', false) == true
+        && legacyCollection in [
+          'campaigns', 'groups', 'mediaAssets', 'mediaFolders', 'achievementDefs',
+          'npcContacts', 'npcDialogues', 'qrRedirects', 'playEvents', 'activityLog',
+          'jukeboxTracks', 'system', 'activeSessions'
+        ];
     }
   }
 }

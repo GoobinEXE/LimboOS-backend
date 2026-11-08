@@ -13,3 +13,7 @@ functions/node_modules/
 *.log
 firepit-log.txt
 
+
+# Spike de regras (Fase 0)
+rules-tests/node_modules/
+rules-tests/results.json

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "BIGMOUTH_BOCAO",
+    "name": "Bocão",
+    "number": "(11) 92003-0500",
+    "campaignIds": "global",
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "MAI_ARCHIVE",
+    "name": "Mai",
+    "number": "(11) 92003-0200",
+    "campaignIds": "global",
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "JADEN",
+    "name": "Jaden",
+    "number": "(11) 92003-0300",
+    "campaignIds": "global",
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "JOE_AMPED",
+    "name": "Joe",
+    "number": "(11) 92003-0400",
+    "campaignIds": "global",
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "NIL_ECHO",
+    "name": "Nil",
+    "number": "(11) 92003-0100",
+    "campaignIds": "global",
+    "enabled": true,
+    "source": "suggestion"
+  }
+]

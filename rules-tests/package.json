@@ -1,0 +1,15 @@
+{
+  "name": "limboos-rules-tests",
+  "private": true,
+  "type": "module",
+  "description": "Testes das regras do Firestore e do Storage (Fase 0 spike + regras de produção)",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore,storage --project demo-limboos \"$npm_node_execpath --test --test-concurrency=1\"",
+    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-limboos \"$npm_node_execpath --test --test-concurrency=1 firestore.rules.test.js\"",
+    "test:functions": "firebase emulators:exec --only firestore --project demo-limboos-fn \"cd ../functions && $npm_node_execpath --test --test-concurrency=1 test/\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.2.0"
+  }
+}

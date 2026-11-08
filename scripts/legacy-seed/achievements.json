@@ -1,0 +1,871 @@
+[
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-FIRST",
+    "title": "Primeiro Contato",
+    "description": "Deu o primeiro passo neste abismo.",
+    "iconUrl": "/achievements/ACH-FIRST.png",
+    "rule": {
+      "type": "audioTapeCount",
+      "count": 1
+    },
+    "unlockCondition": "Encontrar e escanear 1 fita de áudio.",
+    "category": "progression",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-THREE",
+    "title": "Colecionador",
+    "description": "Uma pequena amostra do que está por vir.",
+    "iconUrl": "/achievements/ACH-THREE.png",
+    "rule": {
+      "type": "audioTapeCount",
+      "count": 3
+    },
+    "unlockCondition": "Escanear 3 fitas de áudio diferentes.",
+    "category": "progression",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-FIVE",
+    "title": "Arquivista",
+    "description": "A busca pelo conhecimento nunca termina.",
+    "iconUrl": "/achievements/ACH-FIVE.png",
+    "rule": {
+      "type": "audioTapeCount",
+      "count": 4
+    },
+    "unlockCondition": "Escanear 4 fitas de áudio diferentes.",
+    "category": "progression",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-ALL",
+    "title": "Biblioteca Completa",
+    "description": "Nada mais escapa da sua percepção.",
+    "iconUrl": "/achievements/ACH-ALL.png",
+    "rule": {
+      "type": "audioTapeCount",
+      "count": 5
+    },
+    "unlockCondition": "Escanear todas as 5 fitas normais da 1ª temporada.",
+    "category": "progression",
+    "tier": "legendary",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LISTENER",
+    "title": "Agente Ativo",
+    "description": "Apenas escutando os recados.",
+    "iconUrl": "/achievements/ACH-LISTENER.png",
+    "rule": {
+      "type": "listenTime",
+      "seconds": 120
+    },
+    "unlockCondition": "Acumular 2 minutos de escuta.",
+    "category": "progression",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-TIME-30",
+    "title": "Sinal Sustentado",
+    "description": "O ruído branco já não incomoda.",
+    "iconUrl": "/achievements/ACH-TIME-30.png",
+    "rule": {
+      "type": "listenTime",
+      "seconds": 1800
+    },
+    "unlockCondition": "Acumular 30 minutos de escuta total.",
+    "category": "progression",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-TIME-1",
+    "title": "Ouvinte Assíduo",
+    "description": "Sons começam a fazer parte do silêncio.",
+    "iconUrl": "/achievements/ACH-TIME-1.png",
+    "rule": {
+      "type": "listenTime",
+      "seconds": 3600
+    },
+    "unlockCondition": "Acumular 1 hora de escuta.",
+    "category": "progression",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-TIME-10",
+    "title": "Audiófilo",
+    "description": "Vozes ecoam pela cabeça.",
+    "iconUrl": "/achievements/ACH-TIME-10.png",
+    "rule": {
+      "type": "listenTime",
+      "seconds": 36000
+    },
+    "unlockCondition": "Acumular 10 horas de escuta.",
+    "category": "progression",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-TIME-50",
+    "title": "Fita Gasta",
+    "description": "Você já esqueceu como era a vida antes.",
+    "iconUrl": "/achievements/ACH-TIME-50.png",
+    "rule": {
+      "type": "listenTime",
+      "seconds": 180000
+    },
+    "unlockCondition": "Acumular 50 horas de reprodução.",
+    "category": "progression",
+    "tier": "legendary",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-FULL-LISTEN",
+    "title": "Fim da Fita",
+    "description": "O clique final do carretel.",
+    "iconUrl": "/achievements/ACH-FULL-LISTEN.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "fullTapeListens",
+      "target": 1
+    },
+    "unlockCondition": "Ouvir uma fita inteira até o fim.",
+    "category": "progression",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-FAST-SCAN",
+    "title": "Data Miner",
+    "description": "Rápido demais para o sistema.",
+    "iconUrl": "/achievements/ACH-FAST-SCAN.png",
+    "rule": {
+      "type": "rapidScan",
+      "count": 3
+    },
+    "unlockCondition": "Escanear 3 fitas em menos de 5 minutos.",
+    "category": "progression",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-BIOS-BOOT",
+    "title": "POST Completo",
+    "description": "O firmware ainda responde.",
+    "iconUrl": "/achievements/ACH-BIOS-BOOT.png",
+    "rule": {
+      "type": "flag",
+      "statKey": "biosOpened"
+    },
+    "unlockCondition": "Abrir o terminal BIOS pela primeira vez.",
+    "category": "exploration",
+    "tier": "common",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-WIN95-BOOT",
+    "title": "Plug and Play",
+    "description": "Bem-vindo a 1995.",
+    "iconUrl": "/achievements/ACH-WIN95-BOOT.png",
+    "rule": {
+      "type": "flag",
+      "statKey": "win95Opened"
+    },
+    "unlockCondition": "Inicializar o Windows 95 pelo terminal.",
+    "category": "exploration",
+    "tier": "common",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-OS-TRIPLE",
+    "title": "Trindade de Interfaces",
+    "description": "CLI, GUI e o que veio antes.",
+    "iconUrl": "/achievements/ACH-OS-TRIPLE.png",
+    "rule": {
+      "type": "allFlags",
+      "statKeys": [
+        "biosOpened",
+        "win95Opened",
+        "macosOpened"
+      ]
+    },
+    "unlockCondition": "Visitar BIOS, Windows 95 e Mac OS pelo menos uma vez.",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-ARCHIVE-OPEN",
+    "title": "Arquivo Aberto",
+    "description": "Papel, pixels e ruído de scanner.",
+    "iconUrl": "/achievements/ACH-ARCHIVE-OPEN.png",
+    "rule": {
+      "type": "flag",
+      "statKey": "archiveOpened"
+    },
+    "unlockCondition": "Abrir um intel visual ou textual no leitor de evidências.",
+    "category": "exploration",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-REPAIR-APP",
+    "title": "Engenheiro de Software",
+    "description": "Interfaces visuais em um mundo CLI.",
+    "iconUrl": "/achievements/ACH-REPAIR-APP.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Iniciar o aplicativo de reparo de discos.",
+    "category": "exploration",
+    "tier": "common",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-REPAIR-FAIL",
+    "title": "Setor Defeituoso",
+    "description": "A agulha não consegue ler o caos de primeira.",
+    "iconUrl": "/achievements/ACH-REPAIR-FAIL.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Diagnosticar o disquete corrompido.",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-REPAIR-SUCCESS",
+    "title": "A Verdade no Zero",
+    "description": "O conteúdo da fenda foi restaurado.",
+    "iconUrl": "/achievements/ACH-REPAIR-SUCCESS.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Reparar o disquete e ler a mensagem oculta.",
+    "category": "exploration",
+    "tier": "legendary",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-SECRET",
+    "title": "Você Não Deveria Estar Aqui",
+    "description": "Algumas coisas devem permanecer ocultas.",
+    "iconUrl": "/achievements/ACH-SECRET.png",
+    "rule": {
+      "type": "secretTape"
+    },
+    "unlockCondition": "Desbloquear qualquer intel marcado como secreto.",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LORE-ANALOG",
+    "title": "Viajante Analógico",
+    "description": "A entidade na fita magnetizada.",
+    "iconUrl": "/achievements/ACH-LORE-ANALOG.png",
+    "rule": {
+      "type": "loreKeyword",
+      "keyword": "analog_traveler"
+    },
+    "unlockCondition": "Desbloquear uma fita do artista Analog_Traveler.",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LIMBO-FOUND",
+    "title": "Despertar",
+    "description": "Onde nós realmente estamos?",
+    "iconUrl": "/achievements/ACH-LIMBO-FOUND.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Acessar o BBS secreto Limbo_01.",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LIMBO-READ",
+    "title": "O Ponto Zero",
+    "description": "Agora você não pode mais fechar os olhos.",
+    "iconUrl": "/achievements/ACH-LIMBO-READ.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Ler todas as threads do arquivo do BBS Limbo_01.",
+    "category": "lore",
+    "tier": "legendary",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-MECH-SCREW",
+    "title": "Mecânico",
+    "description": "Curiosidade desmontada.",
+    "iconUrl": "/achievements/ACH-MECH-SCREW.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "screwClicks",
+      "target": 15
+    },
+    "unlockCondition": "Clicar nos parafusos do deck (mín. 15).",
+    "category": "mechanics",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-MECH-MARRETA",
+    "title": "Eu vou pegar a minha marreeeeeta",
+    "description": "Como os botões podem ser fidget toys.",
+    "iconUrl": "/achievements/ACH-MECH-MARRETA.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "fidgetClicks",
+      "target": 500
+    },
+    "unlockCondition": "Acumular 500 cliques em botões, scroll e parafusos.",
+    "category": "mechanics",
+    "tier": "legendary",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-MECH-INDECISIVE",
+    "title": "Indeciso",
+    "description": "A ilusão da escolha.",
+    "iconUrl": "/achievements/ACH-MECH-INDECISIVE.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "ejectWithoutPlay",
+      "target": 10
+    },
+    "unlockCondition": "Ejetar a fita 10 vezes sem dar play.",
+    "category": "mechanics",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-VOL-MAX",
+    "title": "Tímpanos de Aço",
+    "description": "Gritos abafados pelo ruído.",
+    "iconUrl": "/achievements/ACH-VOL-MAX.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "maxVolumeTime",
+      "target": 300
+    },
+    "unlockCondition": "Manter volume em 100% por 5 minutos cumulativos.",
+    "category": "mechanics",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-VOL-ZERO",
+    "title": "Silêncio Tático",
+    "description": "Apenas o silêncio.",
+    "iconUrl": "/achievements/ACH-VOL-ZERO.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "zeroVolumeTime",
+      "target": 180
+    },
+    "unlockCondition": "Manter volume em 0 com áudio tocando por 3 minutos.",
+    "category": "mechanics",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-MODE-FIDGET",
+    "title": "Sinal Confuso",
+    "description": "O display não sabe o que mostrar.",
+    "iconUrl": "/achievements/ACH-MODE-FIDGET.png",
+    "rule": {
+      "type": "mechanics",
+      "statKey": "modeSwitches",
+      "target": 25
+    },
+    "unlockCondition": "Alternar o modo de display do walkman 25 vezes.",
+    "category": "mechanics",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-VETERAN",
+    "title": "Veterano da Agência",
+    "description": "Uma honra concedida apenas pelo Alto Escalão.",
+    "iconUrl": "/achievements/ACH-VETERAN.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgada manualmente pelo administrador.",
+    "category": "honor",
+    "tier": "legendary",
+    "platforms": [
+      "global"
+    ],
+    "campaignIds": "global"
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-WAKES",
+    "title": "Velório sob Chuva",
+    "description": "A cidade ainda não sabe o que perdeu.",
+    "iconUrl": "/achievements/ACH-LR-WAKES.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após Cap. 1 (velório / igreja).",
+    "category": "lore",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-DEMO",
+    "title": "Demo Urgente",
+    "description": "Uma fita que não deveria existir.",
+    "iconUrl": "/achievements/ACH-LR-DEMO.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após a banda ouvir a fita DEMO na garagem (Ato 1 Cap 2).",
+    "category": "lore",
+    "tier": "common",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-CLOCK",
+    "title": "Contra o Relógio",
+    "description": "Trinta minutos. Nem um a mais.",
+    "iconUrl": "/achievements/ACH-LR-CLOCK.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após investigação do quarto (sem nomear Ponto Zero na UI do jogador).",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-BENCH",
+    "title": "Bancada Quente",
+    "description": "Solda, cheiro de estanho, circuito aberto.",
+    "iconUrl": "/achievements/ACH-LR-BENCH.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após Circuitos da Emy / Walkman na mesa.",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-CAB",
+    "title": "Zero no Painel",
+    "description": "O contador parou onde não deveria.",
+    "iconUrl": "/achievements/ACH-LR-CAB.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após Crazy Zone (arcade travado). Ícone genérico — sem Crazy Taxi.",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-LR-STAGE",
+    "title": "Palco Escolhido",
+    "description": "Barricada, cabo e volume.",
+    "iconUrl": "/achievements/ACH-LR-STAGE.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após preparativos do Ato 3 (sem spoiler de combate/resgate).",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "walkman"
+    ],
+    "campaignIds": [
+      "last-rewind"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-SB-SIGNAL",
+    "title": "Inbox Fantasma",
+    "description": "O aparelho vibra com o que a cidade não admite.",
+    "iconUrl": "/achievements/ACH-SB-SIGNAL.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Auto: primeira leitura de SMS no companion Nokia. Fallback: outorgar na mesa.",
+    "category": "lore",
+    "tier": "common",
+    "platforms": [
+      "nokia"
+    ],
+    "campaignIds": [
+      "last-rewind-side-b"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-SB-SHARED",
+    "title": "Mesma Frequência",
+    "description": "Todos acordaram com o mesmo ruído.",
+    "iconUrl": "/achievements/ACH-SB-SHARED.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após cena do pesadelo compartilhado (sem 03:33 legível no ícone).",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "nokia"
+    ],
+    "campaignIds": [
+      "last-rewind-side-b"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-SB-KNOCK",
+    "title": "Batida na Porta",
+    "description": "Papelada à meia-noite.",
+    "iconUrl": "/achievements/ACH-SB-KNOCK.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Outorgar após batida policial.",
+    "category": "lore",
+    "tier": "rare",
+    "platforms": [
+      "nokia"
+    ],
+    "campaignIds": [
+      "last-rewind-side-b"
+    ]
+  },
+  {
+    "hint": "???",
+    "isSecret": true,
+    "enabled": true,
+    "source": "suggestion",
+    "id": "ACH-SB-PAGER",
+    "title": "Bipe Fora de Época",
+    "description": "Um sinal que não deveria existir em 2003.",
+    "iconUrl": "/achievements/ACH-SB-PAGER.png",
+    "rule": {
+      "type": "manual"
+    },
+    "unlockCondition": "Manual até existir QR/pager no Firestore. Outorgar ao escanear o pager prop do guia LimboOS.",
+    "category": "exploration",
+    "tier": "rare",
+    "platforms": [
+      "nokia"
+    ],
+    "campaignIds": [
+      "last-rewind-side-b"
+    ]
+  }
+]

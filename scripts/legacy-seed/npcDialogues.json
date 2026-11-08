@@ -1,0 +1,542 @@
+[
+  {
+    "id": "bigmouth_bocao_conv_1",
+    "npcId": "BIGMOUTH_BOCAO",
+    "title": "Conversa 1",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Pô, bicho, tu não tá entendendo. Esse PS2 que peguei é sacanagem de bom. O gráfico do Vice City parece cinema de tão real, maluco. Fico só desfilando de moto ouvindo rock dos anos 80, bom demais!"
+      },
+      {
+        "speaker": "player",
+        "text": "Caraca, Vice City é muito viciante mesmo! E o trampo aí na oficina?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Tranquilão, cara! Em 2000 eu suava pra achar transistor e peça pra placa arcade. Agora em 2003 esses trecos custam troco de pinga nas eletrônicas do centro. Conserto os fliperamas mó rápido, ganho meu dinheirinho e ainda sobra tempo de sobra pra comer pastel na feira."
+      },
+      {
+        "speaker": "player",
+        "text": "Pô, então cê tá no paraíso. Nem dá vontade de esquentar a cabeça com fenda e voltar pro ano 2000, né?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Nem fodendo, bicho! Voltar pra que? Passar frio naquela chuva maldita de Swallow Rest e caçar capacitor velho em ferro-velho? Deixa eu aqui no meu videogame comendo pastel de vento que eu tô feliz da vida, pô!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "bigmouth_bocao_conv_2",
+    "npcId": "BIGMOUTH_BOCAO",
+    "title": "O Roubo do Apelido",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Pô, bicho, tava vendo uns clipes na MTV e fiquei puto aqui. Tem uma banda gringa mó famosa que roubou meu nome na cara dura. Os caras se chamam Big Mouth, maluco! Mó plágio do meu apelido!"
+      },
+      {
+        "speaker": "player",
+        "text": "Bigmouth? Que banda é essa, Bocão? Nunca ouvi falar."
+      },
+      {
+        "speaker": "npc",
+        "text": "Ah, para de KO! É aquela banda que fez aquela música \"All Stars\" que toca em tudo que é lugar. Os caras estouraram faz pouco tempo, em 2001, por causa da trilha daquele filme maneiro daquele bicho verde gigante, tá ligado?"
+      },
+      {
+        "speaker": "player",
+        "text": "Ah, não, seu burro! Hahaha! A banda se chama SMASH MOUTH, não Big Mouth! E os caras são mó velhos, a banda é de 1994, bem antes de você ter esse apelido!"
+      },
+      {
+        "speaker": "npc",
+        "text": "Pô, sério? Smash Mouth? Ah... mas pô, traduzido dá quase na mesma parada, não dá? \"Smash\" é esmagar, \"Mouth\" é boca... boca esmagada, boca grande... Sei lá, mó mancada deles. Achei que tavam me imitando."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "bigmouth_bocao_conv_3",
+    "npcId": "BIGMOUTH_BOCAO",
+    "title": "A Rejeição do Silício",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mano, fiz um teste bizarro com os cartões de memória de PS1 e disquetes de jogo que eu tenho guardados na oficina."
+      },
+      {
+        "speaker": "player",
+        "text": "O que rolou? Perderam os saves dos jogos?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Cara! Qualquer dado novo que eu gravo em chip de silício moderno corrompe e some em menos de 24 horas. Mas se eu gravar a mesma parada numa fita K7 de áudio ou fita VHS analógica, o dado dura dias sem sumir!"
+      },
+      {
+        "speaker": "player",
+        "text": "Que doideira... Por que o silício tá dando pau e a fita não?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Because o silício é tecnologia moderna demais pro sistema desse loop aguentar, maluco! A física de 2003 tá rejeitando semicondutores avançados pra não estourar a memória de Swallow Rest. A gente só tá seguro usando gambi analógica."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "bigmouth_bocao_conv_4",
+    "npcId": "BIGMOUTH_BOCAO",
+    "title": "O Consumo Fantasma",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Pô, bicho, o relógio de luz da Byte Haven tá girando tão rápido que parece que vai sair voando. A conta de energia desse mês veio uma facada."
+      },
+      {
+        "speaker": "player",
+        "text": "Mas você tá com todos os fliperamas ligados ao mesmo tempo aí embaixo?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Que nada, cara! Desliguei todos os disjuntores da oficina pra testar. Mesmo com tudo apagado no breu, o medidor continua registrando um consumo violento vindo direto do chão do porão."
+      },
+      {
+        "speaker": "player",
+        "text": "Do chão? Tipo, vazamento de energia?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Isso! Tem alguma parada embaixo do piso de concreto que tá sugando eletricidade direto da rede pública da prefeitura, feito um ralo. Acho que a fenda do Nil tá se alimentando da energia da cidade em segredo. Essa porra vai explodir, maluco."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "mai_archive_conv_1",
+    "npcId": "MAI_ARCHIVE",
+    "title": "Conversa 1",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Menino, eu passei a tarde inteira revisando os arquivos de nascimento na prefeitura de Swallow Rest. Os registros de 1980 a 1985 são idênticos."
+      },
+      {
+        "speaker": "player",
+        "text": "Idênticos como? O cartório errou os nomes?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Não! Os nomes, as datas de nascimento, os casamentos... até os erros de digitação das certidões são exatamente os mesmos repetidos em anos diferentes! É um ctrl+c ctrl+v!"
+      },
+      {
+        "speaker": "player",
+        "text": "Meu Deus... Como assim? Isso não faz sentido."
+      },
+      {
+        "speaker": "npc",
+        "text": "Não faz! É como se esse ano de 2003 não tivesse um passado real de verdade. Alguém ou alguma coisa criou essa versão da cidade às pressas e só teve o trabalho de detalhar os dados de 2000 pra frente. O resto do passado é tudo arquivo fantasma!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "mai_archive_conv_2",
+    "npcId": "MAI_ARCHIVE",
+    "title": "O Tratamento de Mentira",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Cara, encontrei a tia do Nil na padaria da praça ontem. Ela veio me abraçar chorando, falando que sentia muito pelo meu \"longo tratamento psiquiátrico\"."
+      },
+      {
+        "speaker": "player",
+        "text": "Hospital psiquiátrico? De onde ela tirou essa ideia?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Eu não faço a menor ideia! Eu nunca pisei num hospital! Mas ela jurava por Deus que tinha me visitado numa clínica em Curitiba durante o ano todo de 2001. Ela lembrava de detalhes dos médicos!"
+      },
+      {
+        "speaker": "player",
+        "text": "Que bizarro... Será que ela tá ficando biruta?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Não, ela parecia super lúcida! É como se a cidade estivesse implantando falsas memórias na cabeça das pessoas pra preencher o buraco dos três anos que a gente passou sumido. Swallow Rest tá reescrevendo eles!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "mai_archive_conv_3",
+    "npcId": "MAI_ARCHIVE",
+    "title": "Os Tiras sem Olhos",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Você já tentou olhar diretamente pro rosto do guarda que patrulha a praça central de Swallow Rest? Eu tentei ontem enquanto fingia ler um livro."
+      },
+      {
+        "speaker": "player",
+        "text": "Não reparei... O que tem de errado com a cara do policial?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Mano, se você olha de relance, parece normal. Mas quando você foca o olho direto na cara dele... os traços parecem embaçados, meio sem definição. E ele não pisca!"
+      },
+      {
+        "speaker": "player",
+        "text": "Que sinistro... Tá me dando um cagaço isso."
+      },
+      {
+        "speaker": "npc",
+        "text": "Eu tô surtando! Parece que essas patrulhas novas não são policiais de verdade de Swallow Rest. São apenas \"cascas\" vazias que a simulação gerou pra vigiar a gente. Por favor, toma muito cuidado com eles hoje!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "jaden_conv_1",
+    "npcId": "JADEN",
+    "title": "Conversa 1",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Cara, a internet banda larga ADSL que instalei aqui é um caminho sem volta. Baixei Ragnarok Online e a taxa de ping tá ridícula de baixa. Dá pra jogar sem lag nenhum, mano! É surreal!"
+      },
+      {
+        "speaker": "player",
+        "text": "Pô, sério? Nem precisa mais esperar dar meia-noite pra discar e pagar só um pulso?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Exatamente, noob! 24 horas por dia conectado no talo e o mIRC voando. A tecnologia de 2003 deixou o ano 2000 parecendo a idade da pedra. Sinceramente? Acho que a gente se deu muito bem caindo aqui."
+      },
+      {
+        "speaker": "player",
+        "text": "Verdade, a vida tá bem mais fácil. Mas cê ainda pensa na fenda?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Ah, bicho, de vez em quando eu olho pro céu e fico pensando na fórmula... Mas de boa? Queria mesmo era achar um jeito de trazer as placas de rede de 2003 de volta pra 2000 só pra ver o Nil surtando com a velocidade. Hahaha! Mas por enquanto, deixa eu upar meu personagem aqui que tá massa demais!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "jaden_conv_2",
+    "npcId": "JADEN",
+    "title": "O Norte Fantasma",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mano, peguei uma bússola velha de latão do meu avô na gaveta. Ela não tá apontando pro Norte magnético real da Terra de jeito nenhum."
+      },
+      {
+        "speaker": "player",
+        "text": "Seculo? Tá apontando pra onde então? Pro Sul?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Que Sul o que, noob! Ela tá cravada apontando direto na direção da Igreja de São Miguel! Não importa pra onde eu ande em Swallow Rest, a agulha puxa pra lá."
+      },
+      {
+        "speaker": "player",
+        "text": "Que bizarro... Tem algum metal pesado lá?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Não é ferro, cara. É o centro geométrico da fenda de 2000! O magnetismo de Swallow Rest tá sofrendo uma distorção espacial bizarra. Mas ó, isso é ótimo! Se a gente calcular a variação desse ângulo, a gente acha o ponto exato pra abrir a fenda de volta. Eu sei que a gente consegue!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "jaden_conv_3",
+    "npcId": "JADEN",
+    "title": "O Lag da Sombra",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Cara, você já reparou na sua própria sombra quando você passa debaixo dos postes à noite?"
+      },
+      {
+        "speaker": "player",
+        "text": "Sei lá, mano, parece normal. O que tem de errado com a sombra?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Mano, ela tá com lag! Ontem eu dei um pulo perto do hidrante e juro pela minha conta do Ultima Online: a minha sombra demorou quase meio segundo pra pular junto comigo! Ela se moveu depois!"
+      },
+      {
+        "speaker": "player",
+        "text": "Mentira, Jaden. Você tá delirando de sono."
+      },
+      {
+        "speaker": "npc",
+        "text": "Não tô, mermão! O tempo de resposta física deste verão tá engasgando. O motor do espaço-tempo tá tão sobrecarregado tentando manter esse loop de 2003 ativo que ele tá atrasando a renderização da luz! A gente vai quebrar essa simulação, escreve o que eu tô te falando!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "jaden_conv_4",
+    "npcId": "JADEN",
+    "title": "Ouvindo o Sol",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mano, sintoniza o rádio de pilha no último canal de AM, onde só tem estática pura, e deixa ele perto da janela."
+      },
+      {
+        "speaker": "player",
+        "text": "Fiz isso aqui. Só tá saindo aquele chiado de estática quente de sempre."
+      },
+      {
+        "speaker": "npc",
+        "text": "Presta atenção no fundo do chiado. Não é um barulho aleatório. É rítmico, parece um código Morse muito rápido e distorcido."
+      },
+      {
+        "speaker": "player",
+        "text": "Que esquisito... De onde tá vindo essa transmissão?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Do Sol, cara! É interferência direta das manchas solares batendo na nossa atmosfera estática. O Sol tá berrando um monte de radiação na nossa cabeça. Essa é a nossa deixa! A gente só precisa sintonizar a banda nessa mesma frequência pra pegar o \"cheat\" de volta pra 2000!"
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "joe_amped_conv_1",
+    "npcId": "JOE_AMPED",
+    "title": "Conversa 1",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Velho, cê já ouviu o \"Meteora\" do Linkin Park? Lançou esses dias. PQP, as guitarras daquele álbum são um absurdo de pesadas, mano. Tô tentando tirar os riffs aqui no quarto e tá saindo muito foda!"
+      },
+      {
+        "speaker": "player",
+        "text": "Cara, esse CD tá bom demais mesmo! E tá mais fácil tirar as músicas agora?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Nossa, nem se compara, bicho! Entro nos sites de cifra e tablatura pela internet e acho tudo mastigadinho em segundos. Em 2000 eu passava horas pausando fita K7 pra tirar os acordes de ouvido. Mó trampo do caralho."
+      },
+      {
+        "speaker": "player",
+        "text": "Pois é, Joe. Facilitou muito a nossa vida de banda."
+      },
+      {
+        "speaker": "npc",
+        "text": "Total, mano! Comprar corda de guitarra e pedal aqui tá mó barato. Comprei uma pedaleira digital esses dias e tô tirando uns timbres animais. Se eu soubesse que 2003 ia ser esse paraíso pro rock, eu tinha vindo pra cá antes! Quero voltar pra 2000 nada, mó paz aqui."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "joe_amped_conv_2",
+    "npcId": "JOE_AMPED",
+    "title": "O Som Estéril",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Velho, bizarro demais. Troquei as válvulas do meu amplificador de guitarra ontem e tentei tirar aquele som distorcido clássico de garagem. Nada."
+      },
+      {
+        "speaker": "player",
+        "text": "O som tá saindo muito limpo ou tá sem volume?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Ele sai alto, mano, mas não distorce! Posso botar o ganho no talo que o som continua limpo, estéril, parece que foi filtrado por um computador. O ar tá rejeitando a sujeira analógica."
+      },
+      {
+        "speaker": "player",
+        "text": "Caraca... E o que isso tem a ver com a fenda?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Tem a ver que a física de Swallow Rest tá limpando qualquer \"ruído\" que possa causar outra quebra na fenda. O mundo tá tentando ficar comportado demais, tá ligado? Se a gente não forçar a barra com o som bruto da banda, esse loop vai engolir a gente de vez."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "joe_amped_conv_3",
+    "npcId": "JOE_AMPED",
+    "title": "O Silêncio da Vizinhança",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mano, você reparou que o cachorro do vizinho não late mais desde que a gente chegou nesse ano de 2003?"
+      },
+      {
+        "speaker": "player",
+        "text": "Pior que é verdade, tá um silêncio esquisito. Será que ele fugiu?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Não fugiu, bicho. Eu vi ele no quintal ontem. Ele tenta latir, abre a boca, mas não sai som nenhum."
+      },
+      {
+        "speaker": "player",
+        "text": "Que macabro, Joe... Isso me dá um frio na espinha."
+      },
+      {
+        "speaker": "npc",
+        "text": "Macabro é apelido, velho."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "joe_amped_conv_4",
+    "npcId": "JOE_AMPED",
+    "title": "O Pulso Elétrico",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mano, você já encostou a mão na geladeira ou no computador esses dias e sentiu um choquinho de estática? Tá rolando direto comigo no porão."
+      },
+      {
+        "speaker": "player",
+        "text": "Sim, direto! Achei que fosse por causa do calor abafado de hoje."
+      },
+      {
+        "speaker": "npc",
+        "text": "Não é calor, velho. Liguei o osciloscópio do meu pai na tomada de energia e a corrente de 60Hz tá oscilando num padrão muito bizarro. Ela tá batendo igual ao ritmo de um coração humano."
+      },
+      {
+        "speaker": "player",
+        "text": "Credo, Joe. Isso parece coisa de filme de terror."
+      },
+      {
+        "speaker": "npc",
+        "text": "Pois é, bicho. Parece que a fiação elétrica da cidade tá sintonizada com um pulso biológico. Como se Swallow Rest estivesse viva e sugando a nossa energia pra manter esse loop funcionando. Toma cuidado onde você liga seus trecos hoje."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "nil_echo_conv_1",
+    "npcId": "NIL_ECHO",
+    "title": "OS SINAIS DE DEGRADAÇÃO NEURONAL (FIM DE MAIO DE 2003)",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Cara, passei na lanchonete perto do Portão hoje. O hambúrguer tem o mesmo gosto de óleo velho de três anos atrás. É bizarro como tudo aqui parece real, mas os computadores... cara, os computadores voam."
+      },
+      {
+        "speaker": "player",
+        "text": "Pois é, Nil. A vida em 2003 é bem mais fácil. Você tá conseguindo relaxar?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Acho que sim. O mormaço da rua me dá um pouco de dor de cabeça, mas o Joe me emprestou o Deck dele. Tô ouvindo umas fitas antigas de grunge pra me desligar. É bom ter vocês de volta. Eu achei que a gente tinha estragado tudo no ano 2000."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "nil_echo_conv_2",
+    "npcId": "NIL_ECHO",
+    "title": "Conversa 2",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Ei, uma pergunta meio idiota... Qual era o sabor do bolo que a minha mãe fez quando eu fiz 10 anos? Eu tava tentando lembrar aqui e só vem um borrão cinza na minha cabeça. Que estranho."
+      },
+      {
+        "speaker": "player",
+        "text": "Cara, era de chocolate com calda de morango. Você repetiu três vezes, não lembra?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Não... nada. É como se tivesse um arquivo corrompido no meu cérebro. Mas deixa pra lá, deve ser o mormaço. O Joe mudou a fiação do Deck hoje e colocou uns relés. O aparelho tá esquentando um pouco no meu peito, mas o som tá nítido."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "nil_echo_conv_3",
+    "npcId": "NIL_ECHO",
+    "title": "O DESPERTAR DO COLAPSO (14 DE JUNHO DE 2003 - HOJE)",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "Mai, quem é a menina loira de maria-chiquinha naquela foto velha que fica na gaveta do estúdio? Eu olhei pra ela hoje e senti uma tristeza enorme, mas eu não consigo lembrar do nome dela de jeito nenhum."
+      },
+      {
+        "speaker": "player",
+        "text": "Nil... essa é a Sarah. A sua namorada da escolinha. Você guardava os bilhetinhos dela."
+      },
+      {
+        "speaker": "npc",
+        "text": "Sarah? Não... não conheço nenhuma Sarah. Tem certeza de que essa fita é minha? Minha cabeça tá com um chiado agudo horrível hoje. Parece que tem uma rádio AM sintonizada dentro do meu ouvido."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "nil_echo_conv_4",
+    "npcId": "NIL_ECHO",
+    "title": "Conversa 4",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "ELES LEVARAM. ELES LEVARAM TUDO."
+      },
+      {
+        "speaker": "player",
+        "text": "Nil? O que foi? Quem levou o quê?"
+      },
+      {
+        "speaker": "npc",
+        "text": "Os carros pretos. Eu vi da janela. Carros com aqueles hexágonos malditos desenhados nas portas. Eles estavam com lanternas no escuro. Eles rasgaram a fita. O som do ano 2000 sumiu... virou pó. Minhas memórias tão sumindo junto com o plástico. Socorro."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  },
+  {
+    "id": "nil_echo_conv_5",
+    "npcId": "NIL_ECHO",
+    "title": "Conversa 5",
+    "messages": [
+      {
+        "speaker": "npc",
+        "text": "[ALERTA DE SISTEMA: CARACTERES CORROMPIDOS] 01000011 01001111 01010010 01010010 01000001 Eu acabei de ver o fim. O céu virou estática verde. Vocês caíram no vácuo. O ano 2004 não existe, ele não foi programado! O buffer vai estourar!"
+      },
+      {
+        "speaker": "player",
+        "text": "Nil, calma! A gente tá indo pro porão!"
+      },
+      {
+        "speaker": "npc",
+        "text": "O Deck do Joe tá queimando a minha pele. Tá cheirando a plástico derretido. Venham rápido. Eu não sei por quanto tempo ainda vou lembrar de quem são vocês. Venham pro porão. AGORA."
+      }
+    ],
+    "enabled": true,
+    "source": "suggestion"
+  }
+]

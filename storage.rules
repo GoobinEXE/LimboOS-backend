@@ -1,28 +1,47 @@
 rules_version = '2';
 
+// Storage multi-tenant (Fase 1). Arquivos novos ficam sob workspaces/{ws}/...;
+// os caminhos antigos (media/, audios/, mediaAssets/, achievementIcons/, npcAvatars/)
+// ficam somente leitura para a conta com o claim admin legado até a migração ser
+// validada. URLs de download com token continuam funcionando para os jogadores.
+
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isAuthenticated() {
+    function signedIn() {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        userDoc().role == 'admin'
+    function isActive() {
+      return signedIn() && !(
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true
       );
     }
 
-    function isActiveUser() {
-      return isAuthenticated() && (
-        isAdmin() ||
-        userDoc().get('suspended', false) != true
-      );
+    function isOwner(ws) {
+      return isActive() && request.auth.uid == ws;
+    }
+
+    function memberPath(ws) {
+      return /databases/(default)/documents/workspaces/$(ws)/members/$(request.auth.uid);
+    }
+
+    function isMember(ws) {
+      return isActive() && firestore.exists(memberPath(ws));
+    }
+
+    function memberHasCampaign(ws, c) {
+      return isMember(ws) && c in firestore.get(memberPath(ws)).data.get('campaignIds', []);
+    }
+
+    function isPlayer(ws) {
+      return isActive()
+        && firestore.exists(/databases/(default)/documents/workspaces/$(ws)/players/$(request.auth.uid));
+    }
+
+    function isLegacyAdmin() {
+      return signedIn() && request.auth.token.get('admin', false) == true;
     }
 
     function isImageUpload() {
@@ -37,44 +56,48 @@ service firebase.storage {
           || request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)')
           || request.resource.contentType.matches('video/.*')
           || request.resource.contentType == 'application/pdf'
+          || request.resource.contentType.matches('text/.*')
         );
     }
 
+    // Foto de perfil do agente: só o próprio jogador grava.
     match /profilePhotos/{userId}/{allPaths=**} {
-      allow read: if isAdmin() || (isActiveUser() && request.auth.uid == userId);
-      allow write: if isActiveUser()
+      allow read: if isActive() && request.auth.uid == userId;
+      allow write: if isActive()
         && request.auth.uid == userId
         && isImageUpload();
     }
 
-    match /media/{allPaths=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin() && isAllowedMediaUpload();
+    // Mídia da biblioteca da pasta (sem campanha): só o dono.
+    match /workspaces/{ws}/media/{allPaths=**} {
+      allow read: if isOwner(ws);
+      allow write: if isOwner(ws) && (request.resource == null || isAllowedMediaUpload());
     }
 
-    match /audios/{allPaths=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin() && isAllowedMediaUpload();
+    // Mídia de uma campanha: dono e co-mestres daquela campanha.
+    match /workspaces/{ws}/campaigns/{c}/media/{allPaths=**} {
+      allow read: if isOwner(ws) || memberHasCampaign(ws, c);
+      allow write: if (isOwner(ws) || memberHasCampaign(ws, c))
+        && (request.resource == null || isAllowedMediaUpload());
     }
 
-    match /mediaAssets/{allPaths=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin() && isAllowedMediaUpload();
+    // Ícones de conquista e avatares de NPC aparecem para os jogadores da pasta.
+    match /workspaces/{ws}/achievementIcons/{allPaths=**} {
+      allow read: if isOwner(ws) || isMember(ws) || isPlayer(ws);
+      allow write: if (isOwner(ws) || isMember(ws))
+        && (request.resource == null || isImageUpload());
     }
 
-    match /achievementIcons/{allPaths=**} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin() && isImageUpload();
+    match /workspaces/{ws}/npcAvatars/{allPaths=**} {
+      allow read: if isOwner(ws) || isMember(ws) || isPlayer(ws);
+      allow write: if (isOwner(ws) || isMember(ws))
+        && (request.resource == null || isImageUpload());
     }
 
-    match /npcAvatars/{allPaths=**} {
-      allow read: if isActiveUser() || isAdmin();
-      allow write: if isAdmin() && isImageUpload();
-    }
-
-    match /{allPaths=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+    // Legado: leitura para conferência, sem escrita.
+    match /{legacyRoot}/{allPaths=**} {
+      allow read: if isLegacyAdmin()
+        && legacyRoot in ['media', 'audios', 'mediaAssets', 'achievementIcons', 'npcAvatars'];
     }
   }
 }

@@ -19,5 +19,8 @@
   },
   "overrides": {
     "@tootallnate/once": "3.0.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.5.0"
   }
 }

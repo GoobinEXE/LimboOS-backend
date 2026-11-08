@@ -1,0 +1,9 @@
+rules_version = '2';
+// Regras padrão do emulador; cada suíte carrega as regras reais em initializeTestEnvironment.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
