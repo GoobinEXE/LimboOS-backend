@@ -156,6 +156,30 @@ describe('entregas automáticas', () => {
     assert.equal(sentMessages[0].data.achievementId, 'a1');
   });
 
+  test('vídeo sem intel notifica uma vez por transmissão', async () => {
+    const path = `users/${P1}/characters/c1`;
+    const params = { uid: P1, characterId: 'c1' };
+    const video = (notify, requestId) => ({
+      codinome: 'Corvo', workspaceId: A, campaignId: 'X', pendingVideoPlay: { intelId: 'v1', requestId, notify },
+    });
+    const run = async (before, after) => {
+      await db.doc(path).set(after);
+      const afterSnap = await db.doc(path).get();
+      await fft.wrap(fns.pushOnVideoBroadcast)({
+        data: fft.makeChange(fft.firestore.makeDocumentSnapshot(before, path), afterSnap),
+        params,
+      });
+    };
+    const idle = { codinome: 'Corvo', workspaceId: A, campaignId: 'X' };
+    await run(idle, video(false, 'r0'));
+    assert.equal(sentMessages.length, 0);
+    await run(idle, video(true, 'r1'));
+    assert.equal(sentMessages.length, 1);
+    assert.equal(sentMessages[0].data.intelId, 'v1');
+    await run(video(true, 'r1'), video(true, 'r1'));
+    assert.equal(sentMessages.length, 1);
+  });
+
   test('SMS só notifica a mensagem marcada', async () => {
     const params = { wsId: A, groupId: 'gx', messageId: 'm' };
     const path = `workspaces/${A}/groups/gx/messages/m`;

@@ -1,6 +1,6 @@
 const crypto = require('node:crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
@@ -1379,6 +1379,31 @@ exports.pushOnNpcMessage = onDocumentCreated(
       title: 'MENSAGEM CRIPTOGRAFADA',
       body: 'novo contato no canal seguro.',
       data: { groupId, threadId: data.dialogueId || data.npcId },
+    });
+  },
+);
+
+/**
+ * Vídeo transmitido sem liberar intel: com intel, pushOnIntelGranted já avisa.
+ * As regras só deixam o mestre gravar pendingVideoPlay não nulo.
+ */
+exports.pushOnVideoBroadcast = onDocumentUpdated(
+  { document: 'users/{uid}/characters/{characterId}', region: REGION },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    const pending = after?.pendingVideoPlay;
+    if (!pending?.notify || !isId(after.workspaceId)) return;
+    if (before?.pendingVideoPlay?.requestId === pending.requestId) return;
+    const { uid, characterId } = event.params;
+    await pushDelivery({
+      uid,
+      characterId,
+      wsId: after.workspaceId,
+      category: 'intel',
+      title: 'TRANSMISSÃO AO VIVO',
+      body: 'o mestre iniciou uma transmissão.',
+      data: { intelId: pending.intelId },
     });
   },
 );
