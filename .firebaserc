@@ -7,9 +7,6 @@
       "hosting": {
         "main": [
           "terminalhubrpg"
-        ],
-        "staging": [
-          "hub-rpg-5f3e2"
         ]
       }
     }
