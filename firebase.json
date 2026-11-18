@@ -45,10 +45,7 @@
         },
         {
           "source": "/convite/**",
-          "function": {
-            "functionId": "invitePage",
-            "region": "southamerica-east1"
-          }
+          "destination": "/index.html"
         }
       ],
       "headers": [
@@ -154,6 +151,38 @@
             {
               "key": "Cross-Origin-Opener-Policy",
               "value": "same-origin-allow-popups"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "legacy",
+      "public": "hosting-legacy",
+      "redirects": [
+        {
+          "regex": "^/(?P<path>[^.].*)?$",
+          "destination": "https://limboos.web.app/:path",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/.well-known/apple-app-site-association",
+          "destination": "/well-known/apple-app-site-association.json"
+        },
+        {
+          "source": "/.well-known/assetlinks.json",
+          "destination": "/well-known/assetlinks.json"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/.well-known/**",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
             }
           ]
         }

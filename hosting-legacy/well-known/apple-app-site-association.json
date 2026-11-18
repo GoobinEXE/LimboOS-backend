@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["UXJP4APP32.com.limboos.limboOs"],
+        "components": [{ "/": "/convite/*" }]
+      }
+    ]
+  }
+}

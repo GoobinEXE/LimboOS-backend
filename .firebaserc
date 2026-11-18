@@ -6,6 +6,9 @@
     "hub-rpg-5f3e2": {
       "hosting": {
         "main": [
+          "limboos"
+        ],
+        "legacy": [
           "terminalhubrpg"
         ]
       }

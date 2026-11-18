@@ -68,7 +68,7 @@ function fakeResponse() {
   };
 }
 
-async function get(path, { handler = fns.invitePage, host = 'terminalhubrpg.web.app', method = 'GET' } = {}) {
+async function get(path, { handler = fns.invitePage, host = 'limboos.web.app', method = 'GET' } = {}) {
   const req = { method, path, url: path, headers: { host: 'invitepage.run.app', 'x-forwarded-host': host } };
   const res = fakeResponse();
   await handler(req, res);
@@ -122,7 +122,7 @@ describe('página do convite', () => {
     assert.match(html, /<title>Convite para a mesa Pasta A<\/title>/);
     assert.equal(metaContent(html, 'property', 'og:description'), invitePage.INVITE_COPY.valid.description);
     assert.equal(metaContent(html, 'name', 'twitter:description'), invitePage.INVITE_COPY.valid.description);
-    assert.equal(metaContent(html, 'property', 'og:url'), `https://terminalhubrpg.web.app/convite/${token}`);
+    assert.equal(metaContent(html, 'property', 'og:url'), `https://limboos.web.app/convite/${token}`);
     assert.equal(metaContent(html, 'name', 'robots'), 'noindex, nofollow');
     assert.doesNotMatch(html, /rel="canonical"/);
     assert.equal((html.match(/property="og:title"/g) || []).length, 1);

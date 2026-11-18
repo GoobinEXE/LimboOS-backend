@@ -13,7 +13,7 @@
 //   genérica e o app abre do mesmo jeito.
 const { getFirestore } = require('firebase-admin/firestore');
 
-const DEFAULT_SITE_ORIGIN = 'https://terminalhubrpg.web.app';
+const DEFAULT_SITE_ORIGIN = 'https://limboos.web.app';
 // Sem janela de cache: um index.html guardado de antes de um deploy aponta para
 // /assets/* que o Hosting já não serve (404) e o app não abre. Cada pedido revalida
 // por ETag (304 barato); a cópia guardada só serve de reserva se o Hosting falhar.

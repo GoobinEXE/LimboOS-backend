@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.limboos.limboOs",
+      "sha256_cert_fingerprints": [
+        "1C:90:DF:BD:81:F0:EB:94:F6:91:4A:24:5B:07:D2:92:28:C3:CF:70:CA:8D:AC:9E:3C:2A:9E:BF:27:E4:12:69"
+      ]
+    }
+  }
+]
