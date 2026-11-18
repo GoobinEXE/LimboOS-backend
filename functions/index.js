@@ -1,5 +1,5 @@
 const crypto = require('node:crypto');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
@@ -7,6 +7,7 @@ const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const functionsV1 = require('firebase-functions/v1');
 const { sendToUser, logPush } = require('./push');
+const { createInvitePageHandler } = require('./invitePage');
 
 initializeApp();
 
@@ -616,6 +617,15 @@ exports.getInvitePreview = onCall({ region: REGION }, async (request) => {
     ...(status === 'valid' ? {} : { reason: status }),
   };
 });
+
+/**
+ * HTML de /convite/** (rewrite do Hosting): o index.html do app com a prévia de link
+ * da mesa para clientes de chat. Regras de privacidade em invitePage.js.
+ */
+exports.invitePage = onRequest(
+  { region: REGION, invoker: 'public', maxInstances: 10 },
+  createInvitePageHandler({ hashToken, inviteStatus }),
+);
 
 /**
  * Aceita um convite. Co-mestre: entra em members/{uid} com a campanha. Jogador:
