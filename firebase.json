@@ -45,7 +45,10 @@
         },
         {
           "source": "/convite/**",
-          "destination": "/index.html"
+          "function": {
+            "functionId": "invitePage",
+            "region": "southamerica-east1"
+          }
         }
       ],
       "headers": [
@@ -64,6 +67,42 @@
             {
               "key": "X-Robots-Tag",
               "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "/",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/@(admin|terminal){,/**}",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/build-info.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
             }
           ]
         },
@@ -119,6 +158,38 @@
           ]
         }
       ]
+    },
+    {
+      "target": "legacy",
+      "public": "hosting-legacy",
+      "redirects": [
+        {
+          "regex": "^/(?P<path>[^.].*)?$",
+          "destination": "https://limboos.web.app/:path",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/.well-known/apple-app-site-association",
+          "destination": "/well-known/apple-app-site-association.json"
+        },
+        {
+          "source": "/.well-known/assetlinks.json",
+          "destination": "/well-known/assetlinks.json"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/.well-known/**",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
     }
   ],
   "storage": {
@@ -154,8 +225,8 @@
       "anonymous": true,
       "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "HUB RPG",
-        "supportEmail": "support@undefined.firebaseapp.com"
+        "oAuthBrandDisplayName": "LimboOS",
+        "supportEmail": "marcelop.smile@gmail.com"
       }
     }
   }
