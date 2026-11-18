@@ -45,7 +45,10 @@
         },
         {
           "source": "/convite/**",
-          "destination": "/index.html"
+          "function": {
+            "functionId": "invitePage",
+            "region": "southamerica-east1"
+          }
         }
       ],
       "headers": [
